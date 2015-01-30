@@ -34,10 +34,17 @@
 
 (defcomponent conditions-manager [conditions owner]
   (render-state [_ state]
-    (dom/div
-      (dom/h2
-        "conditions")
-      (pr-str conditions))))
+    (dom/ul
+      {:class "unstyled global"}
+      (for [condition conditions]
+        (dom/li
+          {:class "rule"}
+          (dom/div
+            {:class "ruleTitle"}
+            (dom/a
+              {:class "field"}
+              (:name (first (filter #(= (:id %) (:master-field-id condition))
+                                    dummy-ticket-fields))))))))))
 
 
 
@@ -158,55 +165,69 @@
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
     (dom/div
-      {:class "main"}
-
-      (dom/ul
-        {:class "table-header clearfix"}
-        (dom/li
-          "Fields")
-        (dom/li "Values")
-        (dom/li "Fields to show"))
-
+      {:class "cfa_navbar"}
       (dom/div
-        {:class "table-wrapper"}
-        (dom/table
-          {:class "table"}
-          (dom/tbody
-            (dom/tr
-              (dom/td
-                {:class "fields"}
-                (dom/div
-                  {:class "separator"}
-                  "Available")
-                (om/build master-field-picker
-                          (:ticket-fields app-state)
-                          {:opts selected-field-id}))
-              (dom/td
-                (dom/div
-                  {:class "values"}
-                  (dom/div
-                    {:class "separator"}
-                    "Available")
-                  (let [selected-field (first (filter #(= selected-field-id (:id %))
-                                                      (:ticket-fields app-state)))
-                        possible-values (:possible-values selected-field)]
-                    (om/build value-picker
-                              possible-values))))
-              (dom/td
-                {:class "selected"}
-                (dom/div
-                  {:class "values"}
-                  (dom/div
-                    {:class "separator"}
-                    "Available")
-                  (om/build slave-fields-picker
-                            (if selected-value
+        {:class "pane left"}
+        (dom/aside
+          {:class "sidebar"}
+          (dom/div
+            {:class "all_rules"}
+            (dom/h4
+              {:class "rules_summary_title"}
+              "Conditions in this form")
+            (om/build conditions-manager (:conditions app-state)))))
+      (dom/div
+        {:class "pane right section"}
+        (dom/section
+          {:class "main"}
+
+          (dom/ul
+            {:class "table-header clearfix"}
+            (dom/li
+              "Fields")
+            (dom/li "Values")
+            (dom/li "Fields to show"))
+
+          (dom/div
+            {:class "table-wrapper"}
+            (dom/table
+              {:class "table"}
+              (dom/tbody
+                (dom/tr
+                  (dom/td
+                    {:class "fields"}
+                    (dom/div
+                      {:class "separator"}
+                      "Available")
+                    (om/build master-field-picker
                               (:ticket-fields app-state)
-                              [])
-                            {:opts {:slave-fields-picker-chan slave-fields-picker-chan}})
-                  ))
-              ))))
-      (om/build conditions-manager (:conditions app-state)))
+                              {:opts selected-field-id}))
+                  (dom/td
+                    (dom/div
+                      {:class "values"}
+                      (dom/div
+                        {:class "separator"}
+                        "Available")
+                      (let [selected-field (first (filter #(= selected-field-id (:id %))
+                                                          (:ticket-fields app-state)))
+                            possible-values (:possible-values selected-field)]
+                        (om/build value-picker
+                                  possible-values))))
+                  (dom/td
+                    {:class "selected"}
+                    (dom/div
+                      {:class "values"}
+                      (dom/div
+                        {:class "separator"}
+                        "Available")
+                      (om/build slave-fields-picker
+                                (if selected-value
+                                  (:ticket-fields app-state)
+                                  [])
+                                {:opts {:slave-fields-picker-chan slave-fields-picker-chan}})
+                      ))
+                  ))))
+          )))
     ))
 
 
