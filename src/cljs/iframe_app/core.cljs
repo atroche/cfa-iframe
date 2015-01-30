@@ -59,7 +59,8 @@
                                (let [{:keys [pick-channel]} (om/get-shared owner)]
                                  (om/set-state! owner :selected-field-id id)
                                  (put! pick-channel
-                                       {:selected-field-id id})))
+                                       {:updating :selected-field-id
+                                        :value id})))
                    :style    {:font-weight (if (= id selected-field-id)
                                              "bold")}}
                   name))))))
@@ -73,7 +74,8 @@
                        (let [{:keys [pick-channel]} (om/get-shared owner)]
                          (om/set-state! owner :selected-value value)
                          (put! pick-channel
-                               {:selected-value value})))
+                               {:updating :selected-value
+                                :value :value})))
            :style    {:font-weight (if (= value selected-value)
                                      "bold")}}
           name)))))
@@ -83,13 +85,12 @@
     {:selected-slave-fields #{}})
   (will-mount [_]
     (go-loop []
-      (let [{:keys [selected-master-field-id
-                    wipe-selected-slave-fields]} (<! slave-fields-picker-chan)]
-        (when selected-master-field-id
-          (om/set-state! owner :selected-master-field-id selected-master-field-id))
-        (when wipe-selected-slave-fields
-          (println "wtf")
-          (om/set-state! owner :selected-slave-fields #{}))
+      (let [{:keys [msg value]} (<! slave-fields-picker-chan)]
+        (case msg
+          :selected-master-field-id (om/set-state! owner
+                                                   :selected-master-field-id
+                                                   value)
+          :wipe-selected-slave-fields (om/set-state! owner :selected-slave-fields #{}))
         (recur))))
   (render-state [_ {:keys [selected-master-field-id
                            selected-slave-fields]}]
@@ -109,7 +110,8 @@
                          (let [{:keys [pick-channel]} (om/get-shared owner)]
                            (println updated-slave-fields)
                            (put! pick-channel
-                                 {:selected-slave-fields updated-slave-fields}))))
+                                 {:updating :selected-slave-fields
+                                  :value updated-slave-fields}))))
            :style    {:font-weight (if (selected-slave-fields id)
                                      "bold")}}
           name)))))
@@ -126,41 +128,41 @@
   (will-mount [_]
     (let [{:keys [pick-channel]} (om/get-shared owner)]
       (go-loop []
-        (let [{:keys [selected-field-id selected-value
-                      selected-slave-fields]} (<! pick-channel)]
-          (when selected-field-id
-            (put! (om/get-state owner :slave-fields-picker-chan)
-                  {:selected-master-field-id selected-field-id})
-            (om/set-state! owner :selected-field-id selected-field-id))
-          (when selected-value
-            (om/set-state! owner :selected-value selected-value)
-            (om/set-state! owner :selected-slave-fields #{})
-            (put! (om/get-state owner :slave-fields-picker-chan)
-                  {:wipe-selected-slave-fields true}))
-          (when selected-slave-fields
-            (om/set-state! owner :selected-slave-fields selected-slave-fields)))
-        (let [{:keys [selected-field-id
-                      selected-value
-                      selected-slave-fields] :as state} (om/get-state owner)]
-          (when (and selected-field-id selected-value)
-            ; when a conditions values have just changed
-            (when (not (empty? selected-slave-fields))
-              (om/transact! app-state
-                            :conditions
-                            (fn [conditions]
-                              (let [conditions (remove-condition selected-field-id
-                                                                 selected-value
-                                                                 conditions)]
-                                (conj conditions {:master-field-id selected-field-id
-                                                  :value           selected-value
-                                                  :slave-fields    selected-slave-fields})))))
-            (when (empty? selected-slave-fields)
-              ; when all values have been toggled off for a condition
-              (om/transact! app-state
-                            :conditions
-                            (partial remove-condition
-                                     selected-field-id
-                                     selected-value)))))
+        ; handle updates from the three picker components
+        (let [{:keys [updating value]} (<! pick-channel)
+              slave-fields-picker-chan (om/get-state owner :slave-fields-picker-chan)] ; grab new values from channel
+          ; set them on local state:
+          (om/set-state! owner updating value)
+          (case updating
+            :selected-field-id (put! slave-fields-picker-chan
+                                     {:msg :selected-master-field-id
+                                      :value value})
+            :selected-value (put! slave-fields-picker-chan
+                                  {:msg :wipe-selected-slave-fields})
+            nil))
+
+        ;(let [{:keys [selected-field-id
+        ;              selected-value
+        ;              selected-slave-fields] :as state} (om/get-state owner)]
+        ;  (when (and selected-field-id selected-value)
+        ;    ; when a conditions values have just changed
+        ;    (when (not (empty? selected-slave-fields))
+        ;      (om/transact! app-state
+        ;                    :conditions
+        ;                    (fn [conditions]
+        ;                      (let [conditions (remove-condition selected-field-id
+        ;                                                         selected-value
+        ;                                                         conditions)]
+        ;                        (conj conditions {:master-field-id selected-field-id
+        ;                                          :value           selected-value
+        ;                                          :slave-fields    selected-slave-fields})))))
+        ;    (when (empty? selected-slave-fields)
+        ;      ; when all values have been toggled off for a condition
+        ;      (om/transact! app-state
+        ;                    :conditions
+        ;                    (partial remove-condition
+        ;                             selected-field-id
+        ;                             selected-value)))))
         (recur))))
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
