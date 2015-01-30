@@ -43,11 +43,11 @@
 
 (defcomponent master-field-picker [ticket-fields owner]
   (render-state [_ {:keys [selected-field-id]}]
-    (dom/div
-      (dom/h2
-        "available fields")
-      (dom/ul
-        (for [{:keys [name id] :as ticket-field} ticket-fields]
+    (dom/ul
+      {:class "available"}
+      (for [{:keys [name id] :as ticket-field} ticket-fields]
+        (dom/a
+          {:class "field"}
           (dom/li {:on-click (fn [e]
                                (let [{:keys [pick-channel]} (om/get-shared owner)]
                                  (om/set-state! owner :selected-field-id id)
@@ -59,20 +59,17 @@
 
 (defcomponent value-picker [values owner]
   (render-state [_ {:keys [selected-value]}]
-    (dom/div
-      (dom/h2
-        "possible values")
-      (dom/ul
-        (for [{:keys [name value]} values]
-          (dom/li
-            {:on-click (fn [e]
-                         (let [{:keys [pick-channel]} (om/get-shared owner)]
-                           (om/set-state! owner :selected-value value)
-                           (put! pick-channel
-                                 {:selected-value value})))
-             :style    {:font-weight (if (= value selected-value)
-                                       "bold")}}
-            name))))))
+    (dom/ul
+      (for [{:keys [name value]} values]
+        (dom/li
+          {:on-click (fn [e]
+                       (let [{:keys [pick-channel]} (om/get-shared owner)]
+                         (om/set-state! owner :selected-value value)
+                         (put! pick-channel
+                               {:selected-value value})))
+           :style    {:font-weight (if (= value selected-value)
+                                     "bold")}}
+          name)))))
 
 (defcomponent slave-fields-picker [ticket-fields owner {:keys [slave-fields-picker-chan]}]
   (init-state [_]
@@ -89,29 +86,26 @@
         (recur))))
   (render-state [_ {:keys [selected-master-field-id
                            selected-slave-fields]}]
-    (dom/div
-      (dom/h2
-        "fields to show")
-      (dom/ul
-        (for [{:keys [name id]} (filter #(not= (:id %) selected-master-field-id)
-                                        ticket-fields)]
-          (dom/li
-            {:on-click (fn [e]
-                         (let [updated-slave-fields
-                               (if (selected-slave-fields id)
-                                 (disj selected-slave-fields id)
-                                 (conj selected-slave-fields id))]
-                           (om/set-state! owner
-                                          :selected-slave-fields
-                                          updated-slave-fields)
+    (dom/ul
+      (for [{:keys [name id]} (filter #(not= (:id %) selected-master-field-id)
+                                      ticket-fields)]
+        (dom/li
+          {:on-click (fn [e]
+                       (let [updated-slave-fields
+                             (if (selected-slave-fields id)
+                               (disj selected-slave-fields id)
+                               (conj selected-slave-fields id))]
+                         (om/set-state! owner
+                                        :selected-slave-fields
+                                        updated-slave-fields)
 
-                           (let [{:keys [pick-channel]} (om/get-shared owner)]
-                             (println updated-slave-fields)
-                             (put! pick-channel
-                                   {:selected-slave-fields updated-slave-fields}))))
-             :style    {:font-weight (if (selected-slave-fields id)
-                                       "bold")}}
-            name))))))
+                         (let [{:keys [pick-channel]} (om/get-shared owner)]
+                           (println updated-slave-fields)
+                           (put! pick-channel
+                                 {:selected-slave-fields updated-slave-fields}))))
+           :style    {:font-weight (if (selected-slave-fields id)
+                                     "bold")}}
+          name)))))
 
 (defn remove-condition [selected-field selected-value conditions]
   (set (remove (fn [{:keys [master-field-id value]}]
@@ -164,18 +158,62 @@
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
     (dom/div
-      (om/build master-field-picker (:ticket-fields app-state) {:opts selected-field-id})
-      (let [selected-field (first (filter #(= selected-field-id (:id %))
-                                          (:ticket-fields app-state)))
-            possible-values (:possible-values selected-field)]
-        (om/build value-picker
-                  possible-values))
-      (om/build slave-fields-picker
-                (if selected-value
-                  (:ticket-fields app-state)
-                  [])
-                {:opts {:slave-fields-picker-chan slave-fields-picker-chan}})
-      (om/build conditions-manager (:conditions app-state)))))
+      {:class "main"}
+
+      (dom/ul
+        {:class "table-header clearfix"}
+        (dom/li
+          "Fields")
+        (dom/li "Values")
+        (dom/li "Fields to show"))
+
+      (dom/div
+        {:class "table-wrapper"}
+        (dom/table
+          {:class "table"}
+          (dom/tbody
+            (dom/tr
+              (dom/td
+                {:class "fields"}
+                (dom/div
+                  {:class "separator"}
+                  "Available")
+                (om/build master-field-picker
+                          (:ticket-fields app-state)
+                          {:opts selected-field-id}))
+              (dom/td
+                (dom/div
+                  {:class "values"}
+                  (dom/div
+                    {:class "separator"}
+                    "Available")
+                  (let [selected-field (first (filter #(= selected-field-id (:id %))
+                                                      (:ticket-fields app-state)))
+                        possible-values (:possible-values selected-field)]
+                    (om/build value-picker
+                              possible-values))))
+              (dom/td
+                {:class "selected"}
+                (dom/div
+                  {:class "values"}
+                  (dom/div
+                    {:class "separator"}
+                    "Available")
+                  (om/build slave-fields-picker
+                            (if selected-value
+                              (:ticket-fields app-state)
+                              [])
+                            {:opts {:slave-fields-picker-chan slave-fields-picker-chan}})
+                  ))
+              ))))
+      (om/build conditions-manager (:conditions app-state)))
+    ))
+
+
+
+
+
+
 
 (defn main []
   (om/root
