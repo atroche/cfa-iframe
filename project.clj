@@ -29,6 +29,8 @@
 
   :uberjar-name "iframe-app.jar"
 
+  :aliases {"auto-test" ["do" "clean," "cljsbuild" "auto" "test"]}
+
   :cljsbuild {:builds {:app {:source-paths ["src/cljs" "spec/cljs"]
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"

@@ -9,4 +9,4 @@
 (deftest javascript-allows-div0
          (is (= js/Infinity (/ 1 0) (/ (int 1) (int 0)))))
 
-(println "is this working??! hah lol ")
+(println "is this working??! hah lol 2")
