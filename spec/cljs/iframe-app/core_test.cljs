@@ -8,12 +8,13 @@
             [om.core :as om :include-macros true]
             [dommy.core :as dommy :refer-macros [sel sel1]]
             [cljs.core.async :refer [put! chan <! >!]]
-            [iframe-app.utils :refer [fire! string->int]]
+            [iframe-app.utils :refer [fire! click string->int]]
             [iframe-app.core :refer [main app]]))
 
 (enable-console-print!)
 
-
+; TODO: use test.check to generate fixtures
+; TODO: make finders that wait til they find what they're looking for (like Capybara)
 
 (def dummy-ticket-fields
   [{:name            "Priority"
@@ -65,13 +66,14 @@
         master-field (first (sel :a.field))
         master-field-id (element->value-as-number master-field)]
     (go
-      (fire! master-field :click)
+      (click master-field)
       (wait-a-bit)
+
       (is (= "active" (dommy/class (dommy/parent master-field))))
 
       (let [value-element (first (sel :a.value))
             value-value (dommy/attr value-element :value)
-            _ (do (fire! value-element :click)
+            _ (do (click value-element)
                   (wait-a-bit)
                   (is (= "active" (dommy/class (dommy/parent value-element)))))
             slave-fields (take 2 (sel :.selectedField))
@@ -80,7 +82,7 @@
                                      set)
             _ (do (is (not (empty? slave-fields)))
                   (doseq [slave-field slave-fields]
-                    (fire! slave-field :click)
+                    (click slave-field)
                     (wait-a-bit))
                   (wait-a-bit)
                   (doseq [slave-field slave-fields]

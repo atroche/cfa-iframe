@@ -14,5 +14,8 @@
       (.fireEvent node (str "on" (name event-type))
                   (update-event! (.createEventObject js/document))))))
 
+(defn click [element]
+  (fire! element :click))
+
 (defn string->int [str]
   (.parseInt js/window str 10))
