@@ -1,6 +1,6 @@
 (ns iframe-app.server
   (:require [clojure.java.io :as io]
-            [iframe-app.dev :refer [is-dev? inject-devmode-html browser-repl start-figwheel]]
+            [iframe-app.dev :refer [is-dev? inject-devmode-html start-figwheel]]
             [compojure.core :refer [GET defroutes]]
             [compojure.route :refer [resources]]
             [net.cgrand.enlive-html :refer [deftemplate]]

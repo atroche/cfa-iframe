@@ -18,6 +18,7 @@
                  [com.cemerick/clojurescript.test "0.3.3"]
                  [org.omcljs/om "0.8.7"]
                  [environ "1.0.0"]
+                 [prismatic/dommy "1.0.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [prismatic/om-tools "0.3.9" :exclusions [potemkin]]]
 
@@ -35,8 +36,9 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         ;:source-map    "resources/public/js/out.js.map"
+                                        :preamble      ["react/react.min.js"]
                                         :externs       ["react/externs/react.js"]
-                                        :optimizations :whitespace
+                                        :optimizations :none
                                         ;:pretty-print  true
                                         :closure-warnings {:non-standard-jsdoc :off}}}
                        :test {:source-paths ["src/cljs" "spec/cljs"]

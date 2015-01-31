@@ -56,32 +56,39 @@
     (dom/ul
       {:class "available"}
       (for [{:keys [name id] :as ticket-field} ticket-fields]
-        (dom/a
-          {:class "field"}
-          (dom/li {:on-click (fn [e]
-                               (let [{:keys [pick-channel]} (om/get-shared owner)]
-                                 (om/set-state! owner :selected-field-id id)
-                                 (put! pick-channel
-                                       {:updating :selected-field-id
-                                        :value    id})))
-                   :style    {:font-weight (if (= id selected-field-id)
-                                             "bold")}}
-                  name))))))
+        (let [is-selected (= id selected-field-id)]
+          (dom/li {:class (if is-selected
+                            "active")}
+                  (dom/a
+                    {:class    "field"
+                     :value    id
+                     :on-click (fn [e]
+                                 (println "i just got clickeD!!!")
+                                 (let [{:keys [pick-channel]} (om/get-shared owner)]
+                                   (om/set-state! owner :selected-field-id id)
+                                   (put! pick-channel
+                                         {:updating :selected-field-id
+                                          :value    id})))
+                     :style    {:font-weight (if is-selected
+                                               "bold")}}
+                    name)))))))
 
 (defcomponent value-picker [values owner]
   (render-state [_ {:keys [selected-value]}]
     (dom/ul
       (for [{:keys [name value]} values]
-        (dom/li
-          {:on-click (fn [e]
-                       (let [{:keys [pick-channel]} (om/get-shared owner)]
-                         (om/set-state! owner :selected-value value)
-                         (put! pick-channel
-                               {:updating :selected-value
-                                :value    :value})))
-           :style    {:font-weight (if (= value selected-value)
-                                     "bold")}}
-          name)))))
+        (dom/li {:class (if (= value selected-value)
+                          "active")}
+                (dom/a
+                  {:class    "value"
+                   :value value
+                   :on-click (fn [e]
+                               (let [{:keys [pick-channel]} (om/get-shared owner)]
+                                 (om/set-state! owner :selected-value value)
+                                 (put! pick-channel
+                                       {:updating :selected-value
+                                        :value    value})))}
+                  name))))))
 
 (defcomponent slave-fields-picker [ticket-fields owner {:keys [slave-fields-picker-chan]}]
   (init-state [_]
@@ -101,23 +108,27 @@
       (for [{:keys [name id]} (filter #(not= (:id %) selected-master-field-id)
                                       ticket-fields)]
         (dom/li
-          {:on-click (fn [e]
-                       (let [updated-slave-fields
-                             (if (selected-slave-fields id)
-                               (disj selected-slave-fields id)
-                               (conj selected-slave-fields id))]
-                         (om/set-state! owner
-                                        :selected-slave-fields
-                                        updated-slave-fields)
+          (dom/a
+            {:on-click (fn [e]
+                         (let [updated-slave-fields
+                               (if (selected-slave-fields id)
+                                 (disj selected-slave-fields id)
+                                 (conj selected-slave-fields id))]
+                           (om/set-state! owner
+                                          :selected-slave-fields
+                                          updated-slave-fields)
 
-                         (let [{:keys [pick-channel]} (om/get-shared owner)]
-                           (println updated-slave-fields)
-                           (put! pick-channel
-                                 {:updating :selected-slave-fields
-                                  :value    updated-slave-fields}))))
-           :style    {:font-weight (if (selected-slave-fields id)
-                                     "bold")}}
-          name)))))
+                           (let [{:keys [pick-channel]} (om/get-shared owner)]
+                             (put! pick-channel
+                                   {:updating :selected-slave-fields
+                                    :value    updated-slave-fields}))))
+             :class    (if (selected-slave-fields id)
+                         "selectedField assigned"
+                         "selectedField")
+             :style    {:font-weight (if (selected-slave-fields id)
+                                       "bold")}
+             :value id}
+            name))))))
 
 (defn remove-condition [selected-field selected-value conditions]
   (set (remove (fn [{:keys [master-field-id value]}]
@@ -144,28 +155,28 @@
                                   {:msg :wipe-selected-slave-fields})
             nil))
 
-        ;(let [{:keys [selected-field-id
-        ;              selected-value
-        ;              selected-slave-fields] :as state} (om/get-state owner)]
-        ;  (when (and selected-field-id selected-value)
-        ;    ; when a conditions values have just changed
-        ;    (when (not (empty? selected-slave-fields))
-        ;      (om/transact! app-state
-        ;                    :conditions
-        ;                    (fn [conditions]
-        ;                      (let [conditions (remove-condition selected-field-id
-        ;                                                         selected-value
-        ;                                                         conditions)]
-        ;                        (conj conditions {:master-field-id selected-field-id
-        ;                                          :value           selected-value
-        ;                                          :slave-fields    selected-slave-fields})))))
-        ;    (when (empty? selected-slave-fields)
-        ;      ; when all values have been toggled off for a condition
-        ;      (om/transact! app-state
-        ;                    :conditions
-        ;                    (partial remove-condition
-        ;                             selected-field-id
-        ;                             selected-value)))))
+        (let [{:keys [selected-field-id
+                      selected-value
+                      selected-slave-fields] :as state} (om/get-state owner)]
+          (when (and selected-field-id selected-value)
+            ; when a conditions values have just changed
+            (when (not (empty? selected-slave-fields))
+              (om/transact! app-state
+                            :conditions
+                            (fn [conditions]
+                              (let [conditions (remove-condition selected-field-id
+                                                                 selected-value
+                                                                 conditions)]
+                                (conj conditions {:master-field-id selected-field-id
+                                                  :value           selected-value
+                                                  :slave-fields    selected-slave-fields})))))
+            (when (empty? selected-slave-fields)
+              ; when all values have been toggled off for a condition
+              (om/transact! app-state
+                            :conditions
+                            (partial remove-condition
+                                     selected-field-id
+                                     selected-value)))))
         (recur))))
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
