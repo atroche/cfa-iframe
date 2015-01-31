@@ -63,7 +63,6 @@
                     {:class    "field"
                      :value    id
                      :on-click (fn [e]
-                                 (println "i just got clickeD!!!")
                                  (let [{:keys [pick-channel]} (om/get-shared owner)]
                                    (om/set-state! owner :selected-field-id id)
                                    (put! pick-channel

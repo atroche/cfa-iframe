@@ -2,6 +2,7 @@
   (:require-macros [cemerick.cljs.test
                     :refer (is deftest with-test run-tests testing test-var
                                done are)]
+                   [iframe-app.macros :refer [wait-a-bit]]
                    [cljs.core.async.macros :refer [go]])
   (:require [cemerick.cljs.test :as t]
             [om.core :as om :include-macros true]
@@ -10,6 +11,7 @@
             [iframe-app.core :refer [main app]]))
 
 (enable-console-print!)
+
 
 (defn fire!
   "Creates an event of type `event-type`, optionally having
@@ -71,51 +73,40 @@
 (defn string->int [str]
   (.parseInt js/window str 10))
 
-;(deftest top-level-div-is-there
-;  (is (sel1 :.cfa_navbar)))
 
 (deftest ^:async can-make-condition
-  (let [wait-chan (chan)
+  (let [element->value-as-number #(-> %
+                                      (dommy/attr :value)
+                                      string->int)
         master-field (first (sel :a.field))
-        master-field-id (dommy/attr master-field :value)
-        wait-a-bit (fn [timeout] (js/setTimeout (fn []
-                                           (put! wait-chan true))
-                                         timeout))]
+        master-field-id (element->value-as-number master-field)]
     (go
       (fire! master-field :click)
-      (wait-a-bit 400)
-      (<! wait-chan)
+      (wait-a-bit)
       (is (= "active" (dommy/class (dommy/parent master-field))))
 
       (let [value-element (first (sel :a.value))
-            value-value (dommy/attr value-element :value)]
-        (fire! value-element :click)
-        (wait-a-bit 400)
-        (<! wait-chan)
-        (is (= "active" (dommy/class (dommy/parent value-element))))
+            value-value (dommy/attr value-element :value)
+            _ (do (fire! value-element :click)
+                  (wait-a-bit)
+                  (is (= "active" (dommy/class (dommy/parent value-element)))))
+            slave-fields (take 2 (sel :.selectedField))
+            slave-fields-values (->> slave-fields
+                                     (map element->value-as-number)
+                                     set)
+            _ (do (is (not (empty? slave-fields)))
+                  (doseq [slave-field slave-fields]
+                    (fire! slave-field :click)
+                    (wait-a-bit))
+                  (wait-a-bit)
+                  (doseq [slave-field slave-fields]
+                    (is (.contains (dommy/class slave-field) "assigned"))))
 
-        (let [slave-fields (take 2 (sel :.selectedField))]
-          (is (not (empty? slave-fields)))
-          (doseq [slave-field slave-fields]
-            (fire! slave-field :click)
-            (wait-a-bit 50)
-            (<! wait-chan))
-
-          (wait-a-bit 300)
-          (<! wait-chan)
-          (doseq [slave-field slave-fields]
-            (is (.contains (dommy/class slave-field) "assigned")))
-
-          (let [conditions (:conditions @app-state)]
-            (is (= conditions
-                   #{{:master-field-id (string->int master-field-id)
-                      :value           value-value
-                      :slave-fields    (set (map (fn [field]
-                                                   (-> field
-                                                       (dommy/attr :value)
-                                                       string->int))
-                                                 slave-fields))}})))))
-
+            conditions (:conditions @app-state)
+            expected-conditions #{{:master-field-id master-field-id
+                                   :value           value-value
+                                   :slave-fields    slave-fields-values}}
+            _ (do (is (= conditions expected-conditions)))])
       (done))))
 
 ;(click master-field)
