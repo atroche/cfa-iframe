@@ -8,24 +8,11 @@
             [om.core :as om :include-macros true]
             [dommy.core :as dommy :refer-macros [sel sel1]]
             [cljs.core.async :refer [put! chan <! >!]]
+            [iframe-app.utils :refer [fire! string->int]]
             [iframe-app.core :refer [main app]]))
 
 (enable-console-print!)
 
-
-(defn fire!
-  "Creates an event of type `event-type`, optionally having
-   `update-event!` mutate and return an updated event object,
-   and fires it on `node`.
-   Only works when `node` is in the DOM"
-  [node event-type & [update-event!]]
-  (let [update-event! (or update-event! identity)]
-    (if (.-createEvent js/document)
-      (let [event (.createEvent js/document "Event")]
-        (.initEvent event (name event-type) true true)
-        (.dispatchEvent node (update-event! event)))
-      (.fireEvent node (str "on" (name event-type))
-                  (update-event! (.createEventObject js/document))))))
 
 
 (def dummy-ticket-fields
@@ -69,9 +56,6 @@
           (fn []
             (.callPhantom js/window "exit"))
           3000)))
-
-(defn string->int [str]
-  (.parseInt js/window str 10))
 
 
 (deftest ^:async can-make-condition
