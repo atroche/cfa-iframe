@@ -38,7 +38,7 @@
                                         ;:pretty-print  true
                                         :closure-warnings {:non-standard-jsdoc :off}}}
                        :test {:source-paths ["src/cljs" "spec/cljs"]
-                              :notify-command ["slimerjs" "--debug=yes" "resources/runner.js"
+                              :notify-command ["slimerjs" "resources/runner.js"
                                                "resources/public/js/app-test.js"]
                               :compiler {:output-to     "resources/public/js/app-test.js"
                                          :output-dir    "resources/public/js/out-test"
@@ -47,7 +47,7 @@
                                          :optimizations :whitespace
                                          ;:pretty-print  true
                                          :closure-warnings {:non-standard-jsdoc :off}}}}
-              :test-commands {"slimer" ["slimerjs" "--debug=yes" "-jsconsole" "resources/runner.js"
+              :test-commands {"slimer" ["slimerjs" "resources/runner.js"
                                         "resources/public/js/app-test.js"]}}
 
   :profiles {:dev {:source-paths ["env/dev/clj"]

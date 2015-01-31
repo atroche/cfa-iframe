@@ -1,25 +1,14 @@
 // reusable slimerjs/phantomjs script for running clojurescript.test tests
 // see http://github.com/cemerick/clojurescript.test for more info
 
-console.log("runner.js running");
+
 var p = require('webpage').create();
 var fs = require('fs');
 var sys = require('system');
 
-// this craziness works around inscrutable JS context issues when tests being
-// run use iframes and such; rather than injecting or eval'ing test scripts and
-// expressions, dump them all into a static HTML file and everything will be
-// guaranteed to work.
-var loadsLibraries = p.evaluate(function() {
-	    return (typeof cljs !== undefined);
-	});
 
-console.log(sys.args);
-console.log('huh');
 var html = "";
 var pagePath = sys.args[0] + ".html";
-
-console.log(pagePath);
 
 for (var i = 1; i < 2; i++) {
     var src;
@@ -31,23 +20,18 @@ for (var i = 1; i < 2; i++) {
     html += "<script>//<![CDATA[\n" + src + "\n//]]></script>";
 }
 
-html = "<html><head>" + html + "</head><body>hey</body></html>";
+html = "<html><head>" + html + "</head><body></body></html>";
 fs.write(pagePath, html, 'w');
 
 	p.onConsoleMessage = function(message) {
-    		console.log("INSIDE PAGE: " + message);
+    		console.log(message);
     	};
-
-	p.onLoadFinished = function(){
-		p.evaluate(function(){console.log('i am inside the page')});
-		console.log('load finished');
-	}
 
 			p.onCallback = function (x) {
     		var line = x.toString();
     		if (line !== "[NEWLINE]") {
     			console.log(line.replace(/\[NEWLINE\]/g, "\n"));
-    		}}
+    		}};
 
 
 		p.onError = function(msg) {
@@ -58,21 +42,7 @@ fs.write(pagePath, html, 'w');
 
 p.open("file://" + "/Users/aroche/Code/clj/iframe-app/resources/runner.js.html", function () {
 	    fs.remove(pagePath);
-		console.log('this all seems fine');
 
-
-
-
-	p.evaluate(function(){console.log('i am also inside the page but not loaded')});
-	p.evaluate(function(){console.log(cemerick)});
-
-
-
-
-//
-
-//    };
-//
     // p.evaluate is sandboxed, can't ship closures across;
     // so, a bit of a hack, better than polling :-P
     var exitCodePrefix = "phantom-exit-code:";
