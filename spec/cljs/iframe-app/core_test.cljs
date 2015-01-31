@@ -10,8 +10,9 @@
       (fn []
         (.appendChild (.-body js/document)
                       (let [element (.createElement js/document "div")
-                            _ (set! (.-id element) "main")]
+                            _ (set! (.-id element) "app")]
                         element))
+        (main)
         (t/run-all-tests)
         (.callPhantom js/window "exit")))
 

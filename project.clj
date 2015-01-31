@@ -55,8 +55,7 @@
   :profiles {:dev {:source-paths ["env/dev/clj"]
 
                    :dependencies [[figwheel "0.1.6-SNAPSHOT"]
-                                  [com.cemerick/piggieback "0.1.3"]
-                                  [weasel "0.4.2"]
+                                  [com.cemerick/piggieback "0.1.6-SNAPSHOT"]
                                   [leiningen "2.5.0"]]
 
                    :repl-options {:init-ns iframe-app.server
