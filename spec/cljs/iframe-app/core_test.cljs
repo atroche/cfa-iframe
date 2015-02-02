@@ -63,29 +63,27 @@
   (let [element->value-as-number #(-> %
                                       (dommy/attr :value)
                                       string->int)
-        master-field (first (sel :a.field))
-        master-field-id (element->value-as-number master-field)]
+        master-field-el (first (sel :a.field))
+        master-field-id (element->value-as-number master-field-el)]
     (go
-      (click master-field)
+      (click master-field-el)
       (wait-a-bit)
 
-      (is (= "active" (dommy/class (dommy/parent master-field))))
+      (is (= "active" (dommy/class (dommy/parent master-field-el))))
 
       (let [value-element (first (sel :a.value))
-            value-value (dommy/attr value-element :value)
+            value-element-value (dommy/attr value-element :value)
             _ (do (click value-element)
                   (wait-a-bit)
                   (is (= "active" (dommy/class (dommy/parent value-element)))))
-            slave-fields (take 2 (sel :.selectedField))
-            slave-fields-values (->> slave-fields
-                                     (map element->value-as-number)
-                                     set)
-            _ (do (is (not (empty? slave-fields)))
-                  (doseq [slave-field slave-fields]
+            slave-field-elements (take 2 (sel :.selectedField))
+
+            _ (do (is (not (empty? slave-field-elements)))
+                  (doseq [slave-field slave-field-elements]
                     (click slave-field)
                     (wait-a-bit))
                   (wait-a-bit)
-                  (doseq [slave-field slave-fields]
+                  (doseq [slave-field slave-field-elements]
                     (is (.contains (dommy/class slave-field) "assigned"))))
 
             ; just to make sure it doesn't add new conditions
@@ -93,12 +91,16 @@
             _ (do
                 (click second-value-element)
                 (wait-a-bit))
+            ;
+            ;
+            slave-field-element-ids (->> slave-field-elements
+                                         (map element->value-as-number)
+                                         set)
 
-            conditions (:conditions @app-state)
-            expected-conditions #{{:master-field-id master-field-id
-                                   :value           value-value
-                                   :slave-fields    slave-fields-values}}
-            _ (do (is (= conditions expected-conditions)))])
+            condition (first (:conditions @app-state))]
+        (is (and (= master-field-id (:id (:master-field condition)))
+                 (= value-element-value (:value (:field-value condition)))
+                 (= slave-field-element-ids (set (map :id (:slave-fields condition)))))))
       (done))))
 
 ;(click master-field)
