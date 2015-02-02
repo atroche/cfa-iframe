@@ -18,6 +18,7 @@
                  [com.cemerick/clojurescript.test "0.3.3"]
                  [org.omcljs/om "0.8.7"]
                  [environ "1.0.0"]
+                 [sablono "0.3.1"]
                  [prismatic/dommy "1.0.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [prismatic/om-tools "0.3.9" :exclusions [potemkin]]]

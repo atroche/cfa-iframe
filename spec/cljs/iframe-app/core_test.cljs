@@ -88,6 +88,12 @@
                   (doseq [slave-field slave-fields]
                     (is (.contains (dommy/class slave-field) "assigned"))))
 
+            ; just to make sure it doesn't add new conditions
+            second-value-element (second (sel :a.value))
+            _ (do
+                (click second-value-element)
+                (wait-a-bit))
+
             conditions (:conditions @app-state)
             expected-conditions #{{:master-field-id master-field-id
                                    :value           value-value
