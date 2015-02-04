@@ -127,6 +127,24 @@
                       (= field-value selected-field-value)))
                conditions)))
 
+(defcomponent field-list [selections owner {:keys [fields highlighted-by-default label]}]
+  (render-state [_ _]
+    (html
+      [:div.field-list
+       [:div.separator (str label " (" (count fields) ")")]
+       [:ul.available
+        (for [{:keys [name id] :as ticket-field} fields]
+          [:li {:class (if (or highlighted-by-default (= ticket-field (:master-field selections)))
+                         "active")}
+           [:a.field
+            {:value    id
+             :on-click (fn [e]
+                         (let [{:keys [pick-channel]} (om/get-shared owner)]
+                           (put! pick-channel
+                                 {:selection-to-update :master-field
+                                  :new-value           ticket-field})))}
+            name]])]])))
+
 
 (defcomponent master-field-picker [selections owner]
   (render-state [_ _]
@@ -136,32 +154,12 @@
             fields-not-in-conditions (difference (set dummy-ticket-fields)
                                                  fields-in-conditions)]
         [:td.fields
-         [:div.separator (str "Available (" (count fields-not-in-conditions) ")")]
-         [:ul.available
-          (for [{:keys [name id] :as ticket-field} fields-not-in-conditions]
-
-            [:li
-             [:a.field
-              {:value    id
-               :on-click (fn [e]
-                           (let [{:keys [pick-channel]} (om/get-shared owner)]
-                             (put! pick-channel
-                                   {:selection-to-update :master-field
-                                    :new-value           ticket-field})))}
-              name]])]
-
-         [:div.separator (str "Existing conditions (" (count fields-in-conditions) ")")]
-         [:ul.available
-          (for [{:keys [name id] :as ticket-field} fields-in-conditions]
-            [:li {:class "active"}
-             [:a.field
-              {:value    id
-               :on-click (fn [e]
-                           (let [{:keys [pick-channel]} (om/get-shared owner)]
-                             (put! pick-channel
-                                   {:selection-to-update :master-field
-                                    :new-value           ticket-field})))}
-              name]])]]))))
+         (om/build field-list selections {:opts {:fields                 fields-not-in-conditions
+                                                 :highlighted-by-default false
+                                                 :label                  "Available"}})
+         (om/build field-list selections {:opts {:fields                 fields-in-conditions
+                                                 :highlighted-by-default true
+                                                 :label                  "Existing conditions"}})]))))
 
 
 

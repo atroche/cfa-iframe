@@ -63,7 +63,7 @@
   (let [element->value-as-number #(-> %
                                       (dommy/attr :value)
                                       string->int)
-        master-field-el (first (sel :a.field))
+        master-field-el (first (sel "div.field-list a.field"))
         master-field-id (element->value-as-number master-field-el)]
     (go
       (click master-field-el)
@@ -91,8 +91,8 @@
             _ (do
                 (click second-value-element)
                 (wait-a-bit))
-            ;
-            ;
+
+
             slave-field-element-ids (->> slave-field-elements
                                          (map element->value-as-number)
                                          set)
@@ -103,13 +103,3 @@
                  (= slave-field-element-ids (set (map :id (:slave-fields condition)))))))
       (done))))
 
-;(click master-field)
-;(is (active? master-field))
-;(click value-field)
-;(is (active? value-field))
-;(click slave-field)
-;(is (active? value-field))
-;(is (solitary (:conditions app-state)))
-;(is (= {:etc 1} (first (:conditions app-state))))
-;
-;; poll element or do timeout-0?
