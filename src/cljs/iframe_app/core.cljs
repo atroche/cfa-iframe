@@ -10,9 +10,7 @@
     [clojure.set :refer [difference]]
     [cljs.core.async :refer [put! chan <!]]))
 
-; TODO: instead of storing stuff as IDs, store the whole data structure (e.g. under conditions)
-; TODO: store selected fields under app state, share them between most subcomponents and quit doing channels so much
-
+; TODO: make values / slave fields within existing conditions highlight when viewed
 
 (def dummy-ticket-fields
   [{:name            "Priority"
@@ -46,37 +44,47 @@
 (declare will-mount)
 
 
+(defn condition-detail [{:keys [master-field field-value slave-fields]}]
+  [:li.rule {:data-id (:id master-field)}
+   [:div.ruleTitle
+    [:i.icon-arrow-right]
+    [:a.field
+     (:name master-field)]]
+   [:ul.unstyled
+    (let [{:keys [name value]} field-value]
+
+      [:li.value.selectedRule.hardSelect
+       [:a.ruleItem {:value value}
+        [:i.icon-arrow-right] name]
+       [:div.pull-right
+        [:a.deleteRule {:value value} "×"]]
+       [:p
+        [:i.icon-arrow-right]
+        " "
+        (let [slave-field-names (->> slave-fields
+                                     (map :name)
+                                     (clojure.string/join ", "))]
+          [:em slave-field-names])]])]])
+
+
 
 (defcomponent conditions-manager [conditions owner]
   (render-state [_ state]
     (html
-      [:ul.unstyled.global
-       (for [{:keys [master-field field-value slave-fields]} conditions]
-         [:li.rule {:data-id (:id master-field)}
-          [:div.ruleTitle
-           [:i.icon-arrow-right]
-           [:a.field
-            (:name master-field)]]
-          [:ul.unstyled
-           (let [{:keys [name value]} field-value]
-
-             [:li.value.selectedRule.hardSelect
-              [:a.ruleItem {:value value}
-               [:i.icon-arrow-right] name]
-              [:div.pull-right
-               [:a.deleteRule {:value value} "×"]]
-              [:p
-               [:i.icon-arrow-right]
-               " "
-               (let [slave-field-names (->> slave-fields
-                                            (map :name)
-                                            (clojure.string/join ", "))]
-                 [:em slave-field-names])]])]])])))
+      [:div.all_rules
+       [:h4.rules_summary_title
+        (str "Conditions in this form (" (count (:conditions app-state)) ")")]
+       [:ul.unstyled.global
+        (for [condition conditions]
+          (condition-detail condition))]])))
 
 
 
-
-(defn remove-condition [selected-master-field selected-field-value conditions]
+(defn remove-condition
+  "Takes a list of conditions, and returns all the ones that don't include
+   the selected master field / value. Used when “updating” a condition to
+   have new slave fields (actually removing old one and adding new one.)"
+  [selected-master-field selected-field-value conditions]
   (set (remove (fn [{:keys [master-field field-value]}]
                  (and (= master-field selected-master-field)
                       (= field-value selected-field-value)))
@@ -95,17 +103,6 @@
       (conj cleaned-conditions new-condition)
       cleaned-conditions)))
 
-(defn master-field-and-values-selected? [{:keys [master-field field-value]}]
-  (every? (comp not nil?) [master-field field-value]))
-
-
-
-:slave-fields (let [{:keys [master-field field-value] :as selections} (:selections @app-state)
-                    conditions (:conditions @app-state)
-                    master-and-value-selected? (every? (comp not nil?) [master-field field-value])]
-                (when master-and-value-selected?
-                  (let [updated-conditions (update-conditions conditions selections)]
-                    (om/update! app-state [:conditions] updated-conditions))))
 
 (defn reset-irrelevant-selections
   "When someone selects a master field (e.g.) we want to deselect the value
@@ -119,11 +116,9 @@
     selections))
 
 (defcomponent app [app-state owner]
-  (init-state [_]
-    {:selections (:selections app-state)})
   (will-mount [_]
     (go-loop []
-      ; handle updates from the three picker components
+      ; handle updates from the three condition-selector components
       (let [pick-channel (om/get-shared owner :pick-channel)
             {:keys [selection-to-update new-value]} (<! pick-channel)
             new-selections (-> (:selections @app-state)
@@ -134,7 +129,6 @@
         (when (= selection-to-update :slave-fields)
           (let [updated-conditions (update-conditions (:conditions @app-state) new-selections)]
             (om/update! app-state [:conditions] updated-conditions))))
-
       (recur)))
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
@@ -142,9 +136,6 @@
       [:section.ember-view.apps.app-554.apps_nav_bar.app_pane.main_panes
        [:header
         [:h3 "Conditional Fields"]]
-
-
-
        [:div.cfa_navbar
         {:data-main 1}
         [:div.pane.left
@@ -159,10 +150,7 @@
           [:option "what"]]
 
          [:aside.sidebar
-          [:div.all_rules
-           [:h4.rules_summary_title
-            (str "Conditions in this form (" (count (:conditions app-state)) ")")]
-           (om/build conditions-manager (:conditions app-state))]]]
+          (om/build conditions-manager (:conditions app-state))]]
         [:div.pane.right.section
          [:section.main
           [:div.intro
@@ -196,8 +184,7 @@
               [:td.selected
                [:div.values
                 [:div.separator "Available"]
-                (om/build slave-fields-picker (:selections app-state))]]]]]]]
-         ]
+                (om/build slave-fields-picker (:selections app-state))]]]]]]]]
 
         [:footer
          [:div.pane
@@ -221,11 +208,5 @@
     {:target (. js/document (getElementById "app"))
      :shared {:pick-channel  (chan)
               :ticket-fields dummy-ticket-fields}}))
-
-
-
-
-
-
 
 
