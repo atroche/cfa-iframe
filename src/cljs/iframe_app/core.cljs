@@ -126,14 +126,13 @@
       ; handle updates from the three picker components
       (let [pick-channel (om/get-shared owner :pick-channel)
             {:keys [selection-to-update new-value]} (<! pick-channel)
-            new-selections (-> (om/get-state owner :selections)
+            new-selections (-> (:selections @app-state)
                                (assoc selection-to-update new-value)
                                (reset-irrelevant-selections selection-to-update))]
         (om/update! app-state :selections new-selections)
-        (om/set-state! owner :selections new-selections)
 
         (when (= selection-to-update :slave-fields)
-          (let [updated-conditions (update-conditions (:conditions app-state) new-selections)]
+          (let [updated-conditions (update-conditions (:conditions @app-state) new-selections)]
             (om/update! app-state [:conditions] updated-conditions))))
 
       (recur)))
