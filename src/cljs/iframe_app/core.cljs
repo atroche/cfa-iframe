@@ -95,33 +95,56 @@
       (conj cleaned-conditions new-condition)
       cleaned-conditions)))
 
+(defn master-field-and-values-selected? [{:keys [master-field field-value]}]
+  (every? (comp not nil?) [master-field field-value]))
+
+
+
+:slave-fields (let [{:keys [master-field field-value] :as selections} (:selections @app-state)
+                    conditions (:conditions @app-state)
+                    master-and-value-selected? (every? (comp not nil?) [master-field field-value])]
+                (when master-and-value-selected?
+                  (let [updated-conditions (update-conditions conditions selections)]
+                    (om/update! app-state [:conditions] updated-conditions))))
+
+(defn reset-irrelevant-selections
+  "When someone selects a master field (e.g.) we want to deselect the value
+   and slave fields that were selected (because they only applied to that
+   field. Likewise when someone selects a new value."
+  [selections selection-to-update]
+  (case selection-to-update
+    :master-field (assoc selections :field-value nil
+                                    :slave-fields #{})
+    :field-value (assoc selections :slave-fields #{})
+    selections))
 
 (defcomponent app [app-state owner]
+  (init-state [_]
+    {:selections (:selections app-state)})
   (will-mount [_]
-    (let [{:keys [pick-channel]} (om/get-shared owner)]
-      (go-loop []
-        ; handle updates from the three picker components
-        (let [{:keys [selection-to-update new-value]} (<! pick-channel)]
-          (om/update! app-state [:selections selection-to-update] new-value)
+    (go-loop []
+      ; handle updates from the three picker components
+      (let [pick-channel (om/get-shared owner :pick-channel)
+            {:keys [selection-to-update new-value]} (<! pick-channel)
+            new-selections (-> (om/get-state owner :selections)
+                               (assoc selection-to-update new-value)
+                               (reset-irrelevant-selections selection-to-update))]
+        (om/update! app-state :selections new-selections)
+        (om/set-state! owner :selections new-selections)
 
-          (case selection-to-update
-            :master-field (put! pick-channel {:selection-to-update :field-value
-                                              :new-value           nil})
-            :field-value (put! pick-channel {:selection-to-update :slave-fields
-                                             :new-value           #{}})
-            :slave-fields (let [{:keys [master-field field-value] :as selections} (:selections @app-state)
-                                conditions (:conditions @app-state)
-                                master-and-value-selected? (every? (comp not nil?) [master-field field-value])]
-                            (when master-and-value-selected?
-                              (let [updated-conditions (update-conditions conditions selections)]
-                                (om/update! app-state [:conditions] updated-conditions))))))
-        (recur))))
+        (when (= selection-to-update :slave-fields)
+          (let [updated-conditions (update-conditions (:conditions app-state) new-selections)]
+            (om/update! app-state [:conditions] updated-conditions))))
+
+      (recur)))
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
     (html
       [:section.ember-view.apps.app-554.apps_nav_bar.app_pane.main_panes
        [:header
         [:h3 "Conditional Fields"]]
+
+
 
        [:div.cfa_navbar
         {:data-main 1}
@@ -174,10 +197,13 @@
               [:td.selected
                [:div.values
                 [:div.separator "Available"]
-                (om/build slave-fields-picker (:selections app-state))]]]]]]]]
+                (om/build slave-fields-picker (:selections app-state))]]]]]]]
+         ]
 
         [:footer
          [:div.pane
+          [:div
+           (prn-str (clj->js (:selections app-state)))]
           [:button.delete.text-error.deleteAll
            {:style {:display :none}}
            "Delete all conditional rules for this form"]
@@ -194,7 +220,7 @@
     app
     app-state
     {:target (. js/document (getElementById "app"))
-     :shared {:pick-channel (chan)
+     :shared {:pick-channel  (chan)
               :ticket-fields dummy-ticket-fields}}))
 
 
