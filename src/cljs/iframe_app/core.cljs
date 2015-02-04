@@ -47,6 +47,7 @@
   (filter #(ids (:id %)) fields))
 
 
+
 (defcomponent conditions-manager [conditions owner]
   (render-state [_ state]
     (html
@@ -182,40 +183,73 @@
   (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
                            selected-value]}]
     (html
-      [:div.cfa_navbar
-       [:div.pane.left
-        [:aside.sidebar
-         [:div.all_rules
-          [:h4.rules_summary_title
-           "Conditions in this form"]
-          (om/build conditions-manager (:conditions app-state))
-          ]]]
-       [:div.pane.right.section
-        [:section.main
-         [:ul.table-header.clearfix
-          [:li "Fields"]
-          [:li "Values"]
-          [:li "Fields to show"]]
+      [:section.ember-view.apps.app-554.apps_nav_bar.app_pane.main_panes
+       [:header
+        [:h3 "Conditional Fields"]]
 
-         [:div.table-wrapper
-          [:table.table
-           [:tbody
-            [:tr
-             [:td.fields
-              [:div.separator "Available"]
-              (om/build master-field-picker
-                        (:selections app-state))]
+       [:div.cfa_navbar
+        {:data-main 1}
+        [:div.pane.left
+         [:h4 "Conditions for:"]
+         [:select {:style {:width "90%"}}
+          [:option "Agent"]
+          [:option "what"]]
 
-             [:td.key
-              [:div.values
+         [:h4 "Ticket Form:"]
+         [:select {:style {:width "90%"}}
+          [:option "Default Ticket Form"]
+          [:option "what"]]
+
+         [:aside.sidebar
+          [:div.all_rules
+           [:h4.rules_summary_title
+            (str "Conditions in this form (" (count (:conditions app-state)) ")")]
+           (om/build conditions-manager (:conditions app-state))]]]
+        [:div.pane.right.section
+         [:section.main
+          [:div.intro
+           [:h3 "Manage conditional fields"]
+           [:p
+            "Configure your conditions to build your conditional fields. Select a field, a value for that field, and the appropriate field to show. "
+            [:a
+             {:target "_blank",
+              :href
+                      "https://support.zendesk.com/entries/26674953-Using-the-Conditional-Fields-app-Enterprise-Only-"}
+             "Learn more."]]]
+
+          [:ul.table-header.clearfix
+           [:li "Fields"]
+           [:li "Values"]
+           [:li "Fields to show"]]
+
+          [:div.table-wrapper
+           [:table.table
+            [:tbody
+             [:tr
+              [:td.fields
                [:div.separator "Available"]
-               (om/build value-picker
-                         (:selections app-state))
-               ]]
-             [:td.selected
-              [:div.values
-               [:div.separator "Available"]
-               (om/build slave-fields-picker (:selections app-state))]]]]]]]]])))
+               (om/build master-field-picker
+                         (:selections app-state))]
+
+              [:td.key
+               [:div.values
+                [:div.separator "Available"]
+                (om/build value-picker
+                          (:selections app-state))
+                ]]
+              [:td.selected
+               [:div.values
+                [:div.separator "Available"]
+                (om/build slave-fields-picker (:selections app-state))]]]]]]]]
+
+        [:footer
+         [:div.pane
+          [:button.delete.text-error.deleteAll
+           {:style {:display :none}}
+           "Delete all conditional rules for this form"]
+          [:div.action-buttons.pull-right
+           [:button.btn.cancel {:disabled "disabled"} "Cancel changes"]
+           [:button.btn.btn-primary.save {:disabled "disabled"} "Save"]]]]]])))
 
 
 
@@ -229,4 +263,11 @@
     app-state
     {:target (. js/document (getElementById "app"))
      :shared {:pick-channel (chan)}}))
+
+
+
+
+
+
+
 
