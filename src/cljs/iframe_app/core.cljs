@@ -5,6 +5,7 @@
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
+    [clojure.set :refer [difference]]
     [cljs.core.async :refer [put! chan <!]]))
 
 ; TODO: instead of storing stuff as IDs, store the whole data structure (e.g. under conditions)
@@ -130,19 +131,37 @@
 (defcomponent master-field-picker [selections owner]
   (render-state [_ _]
     (html
-      [:ul.available
-       (for [{:keys [name id] :as ticket-field} dummy-ticket-fields]
-         (let [is-selected (= ticket-field (:master-field selections))]
-           [:li {:class (if is-selected
-                          "active")}
-            [:a.field
-             {:value    id
-              :on-click (fn [e]
-                          (let [{:keys [pick-channel]} (om/get-shared owner)]
-                            (put! pick-channel
-                                  {:selection-to-update :master-field
-                                   :new-value           ticket-field})))}
-             name]]))])))
+
+      (let [fields-in-conditions (->> @app-state :conditions (map :master-field) set)
+            fields-not-in-conditions (difference (set dummy-ticket-fields)
+                                                 fields-in-conditions)]
+        [:td.fields
+         [:div.separator (str "Available (" (count fields-not-in-conditions) ")")]
+         [:ul.available
+          (for [{:keys [name id] :as ticket-field} fields-not-in-conditions]
+
+            [:li
+             [:a.field
+              {:value    id
+               :on-click (fn [e]
+                           (let [{:keys [pick-channel]} (om/get-shared owner)]
+                             (put! pick-channel
+                                   {:selection-to-update :master-field
+                                    :new-value           ticket-field})))}
+              name]])]
+
+         [:div.separator (str "Existing conditions (" (count fields-in-conditions) ")")]
+         [:ul.available
+          (for [{:keys [name id] :as ticket-field} fields-in-conditions]
+            [:li {:class "active"}
+             [:a.field
+              {:value    id
+               :on-click (fn [e]
+                           (let [{:keys [pick-channel]} (om/get-shared owner)]
+                             (put! pick-channel
+                                   {:selection-to-update :master-field
+                                    :new-value           ticket-field})))}
+              name]])]]))))
 
 
 
@@ -226,10 +245,8 @@
            [:table.table
             [:tbody
              [:tr
-              [:td.fields
-               [:div.separator "Available"]
-               (om/build master-field-picker
-                         (:selections app-state))]
+              (om/build master-field-picker
+                        (:selections app-state))
 
               [:td.key
                [:div.values
@@ -250,8 +267,6 @@
           [:div.action-buttons.pull-right
            [:button.btn.cancel {:disabled "disabled"} "Cancel changes"]
            [:button.btn.btn-primary.save {:disabled "disabled"} "Save"]]]]]])))
-
-
 
 
 
