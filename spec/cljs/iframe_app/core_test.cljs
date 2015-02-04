@@ -13,6 +13,8 @@
 
 (enable-console-print!)
 
+(set! (.-warn js/console) (fn [t] nil))
+
 ; TODO: use test.check to generate fixtures
 ; TODO: make finders that wait til they find what they're looking for (like Capybara)
 
