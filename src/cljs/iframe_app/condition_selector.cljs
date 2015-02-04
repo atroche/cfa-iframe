@@ -12,17 +12,24 @@
 (declare init-state)
 (declare will-mount)
 
-(defcomponent value-picker [selections owner]
+
+; TODO: items inside any currently selected condition should be bold
+(defcomponent value-picker [{:keys [selections conditions]} owner]
   (render-state [_ _]
     (html
       [:ul
-       (let [selected-field (first (filter (partial = (:master-field selections))
-                                           (om/get-shared owner :ticket-fields)))
+       (let [selected-field (:master-field selections)
              field-values (:possible-values selected-field)]
          (for [{:keys [name value] :as field-value} field-values]
            [:li {:class (if (= field-value (:field-value selections))
                           "active")}
             [:a.value {:value    value
+                       :class (let [value-is-in-condition (some (fn [condition]
+                                                                  (and (= (:master-field condition) selected-field)
+                                                                       (= (:field-value condition) field-value)))
+                                                                conditions)]
+                                (if value-is-in-condition
+                                  "assigned"))
                        :on-click (fn [e]
                                    (let [{:keys [pick-channel]} (om/get-shared owner)]
                                      (put! pick-channel

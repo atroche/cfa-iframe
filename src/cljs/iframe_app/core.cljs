@@ -179,7 +179,7 @@
                [:div.values
                 [:div.separator "Available"]
                 (om/build value-picker
-                          (:selections app-state))
+                          app-state)
                 ]]
               [:td.selected
                [:div.values
