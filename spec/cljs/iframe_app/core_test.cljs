@@ -36,8 +36,7 @@
     :possible-values [{:name "value number one" :value "v1"}
                       {:name "value number two" :value "v2"}]}])
 
-(defonce app-state (atom {:ticket-fields dummy-ticket-fields
-                          :conditions    #{}}))
+(defonce app-state (atom {:conditions    #{}}))
 
 (set! (.-onload js/window)
       (fn []
@@ -51,7 +50,8 @@
         (om/root app
                  app-state
                  {:target (. js/document (getElementById "app"))
-                  :shared {:pick-channel (chan)}})
+                  :shared {:pick-channel (chan)
+                           :ticket-fields dummy-ticket-fields}})
         (t/run-all-tests)
         (js/setTimeout
           (fn []
