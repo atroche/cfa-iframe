@@ -9,8 +9,12 @@
             [dommy.core :as dommy :refer-macros [sel sel1]]
             [cljs.core.async :refer [put! chan <! >!]]
             [iframe-app.utils :refer [fire! click string->int]]
+            [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
+            [cljs.test.check.generators :as gen]
             [iframe-app.condition-selector :refer [fields-without-field]]
             [iframe-app.core :refer [main app]]))
+
+
 
 (enable-console-print!)
 
@@ -18,32 +22,14 @@
 
 (set! (.-warn js/console) (fn [t] nil))
 
-; TODO: use test.check to generate fixtures
+; TODO: use test.check to generate behaviour
 ; TODO: make finders that wait til they find what they're looking for (like Capybara)
 
-; do `reductions` over, producing maps of state
+(def p println)
+
 
 (def dummy-ticket-fields
-  [{:name            "Priority"
-    :id              1234
-    :type            :system
-    :possible-values [{:name "Low" :value "low"}
-                      {:name "Normal" :value "normal"}
-                      {:name "High" :value "high"}
-                      {:name "Urgent" :value "urgent"}]}
-
-   {:name            "custom field"
-    :id              4321
-    :type            :tagger
-    :possible-values [{:name "asdfasd" :value "asdfasd"}
-                      {:name "12345" :value "12345"}]}
-   {:name            "a third field"
-    :id              9999
-    :type            :tagger
-    :possible-values [{:name "value number one" :value "v1"}
-                      {:name "value number two" :value "v2"}]}])
-
-(def p println)
+  (first (gen/sample ticket-fields-gen 1)))
 
 (defn get-master-field-element [field]
   (sel1 (str "a.master-field[data-id='" (:id field) "']")))
@@ -107,6 +93,7 @@
                    behaviours)))
 
 (deftest ^:async declarative
+  ; TODO: replace these dummy fields with generators
   (let [master-field (rand-nth dummy-ticket-fields)
         field-value (rand-nth (:possible-values master-field))
         slave-field (rand-nth (fields-without-field dummy-ticket-fields
@@ -114,22 +101,16 @@
         behaviours [[:select-master-field master-field],
                     [:select-field-value field-value],
                     [:select-slave-field slave-field]]
-        states (get-states-for-behaviors behaviours)]
-
+        states (get-states-for-behaviors behaviours)
+        behaviours-with-state-afterwards (map vector behaviours (rest states))]
 
     (go
-      (doseq [[behaviour after-state] (map vector behaviours (rest states))]
+      (doseq [[behaviour after-state] behaviours-with-state-afterwards]
         (behave behaviour)
         (wait-a-bit)
+
         (is (selection-state-matches? after-state))
         (is (state-matches-dom? after-state)))
-      (wait-a-bit)
-
-      (is (= "active" (dommy/class (dommy/parent (get-master-field-element (second (first behaviours)))))))
-      (let [condition (first (:conditions @app-state))
-            (is (and (= (:id master-field) (:id (:master-field condition)))
-                     (= (:value field-value) (:value (:field-value condition)))
-                     ((set (map :id (:slave-fields condition))) slave-field)))])
       (done))))
 
 
