@@ -27,7 +27,6 @@
 (defn get-field-by [field-type by field]
   (sel1 (str "a." field-type "[data-" by "='" ((keyword by) field) "']")))
 
-
 (def get-master-field-element
   (partial get-field-by "master-field" "id"))
 
@@ -36,8 +35,6 @@
 
 (def get-slave-field-element
   (partial get-field-by "slave-field" "id"))
-
-
 
 
 (defn element-click-fn [element-getter]
@@ -106,7 +103,7 @@
      [:select-slave-field slave-field]]))
 
 
-(deftest ^:async declarative
+(deftest ^:async can-make-conditions
   (let [ticket-fields (first (gen/sample ticket-fields-gen 1))
         behaviour (dummy-behaviour ticket-fields)
         states (get-states-for-behaviors behaviour)
