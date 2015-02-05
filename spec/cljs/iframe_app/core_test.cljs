@@ -14,30 +14,31 @@
             [iframe-app.condition-selector :refer [fields-without-field]]
             [iframe-app.core :refer [main app]]))
 
-
-
 (enable-console-print!)
+(set! (.-warn js/console) (fn [t] nil))
+(def p println)
 
 (defonce app-state (atom {:conditions #{}}))
-
-(set! (.-warn js/console) (fn [t] nil))
 
 ; TODO: use test.check to generate behaviour
 ; TODO: make finders that wait til they find what they're looking for (like Capybara)
 
-(def p println)
+
+(defn get-field-by [field-type by field]
+  (sel1 (str "a." field-type "[data-" by "='" ((keyword by) field) "']")))
+
+
+(def get-master-field-element
+  (partial get-field-by "master-field" "id"))
+
+(def get-field-value-element
+  (partial get-field-by "field-value" "value"))
+
+(def get-slave-field-element
+  (partial get-field-by "slave-field" "id"))
 
 
 
-
-(defn get-master-field-element [field]
-  (sel1 (str "a.master-field[data-id='" (:id field) "']")))
-
-(defn get-field-value-element [field-value]
-  (sel1 (str "a.field-value[data-value='" (:value field-value) "']")))
-
-(defn get-slave-field-element [field]
-  (sel1 (str "a.slave-field[data-id='" (:id field) "']")))
 
 (defn element-click-fn [element-getter]
   (fn [arg]
@@ -84,16 +85,6 @@
                       :value        value})
                    behaviours)))
 
-
-(defn dummy-behaviour [ticket-fields]
-  (let [master-field (rand-nth ticket-fields)
-        field-value (rand-nth (:possible-values master-field))
-        slave-field (rand-nth (fields-without-field ticket-fields
-                                                    master-field))]
-    [[:select-master-field master-field],
-     [:select-field-value field-value],
-     [:select-slave-field slave-field]]))
-
 (defn setup-app [ticket-fields]
   (.appendChild (.-body js/document)
                 (let [element (.createElement js/document "div")
@@ -105,9 +96,18 @@
             :shared {:pick-channel  (chan)
                      :ticket-fields ticket-fields}}))
 
+(defn dummy-behaviour [ticket-fields]
+  (let [master-field (rand-nth ticket-fields)
+        field-value (rand-nth (:possible-values master-field))
+        slave-field (rand-nth (fields-without-field ticket-fields
+                                                    master-field))]
+    [[:select-master-field master-field],
+     [:select-field-value field-value],
+     [:select-slave-field slave-field]]))
+
+
 (deftest ^:async declarative
-  ; TODO: replace these dummy fields with generators
-  (let [ticket-fields (first (gen/sample ticket-fields-gen))
+  (let [ticket-fields (first (gen/sample ticket-fields-gen 1))
         behaviour (dummy-behaviour ticket-fields)
         states (get-states-for-behaviors behaviour)
         behaviours-with-state-afterwards (map vector behaviour (rest states))]
