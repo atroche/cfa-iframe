@@ -23,44 +23,52 @@
          (for [{:keys [name value] :as field-value} field-values]
            [:li {:class (if (= field-value (:field-value selections))
                           "active")}
-            [:a.value {:value    value
-                       :class (let [value-is-in-condition (some (fn [condition]
-                                                                  (and (= (:master-field condition) selected-field)
-                                                                       (= (:field-value condition) field-value)))
-                                                                conditions)]
-                                (if value-is-in-condition
-                                  "assigned"))
-                       :on-click (fn [e]
-                                   (let [{:keys [pick-channel]} (om/get-shared owner)]
-                                     (put! pick-channel
-                                           {:selection-to-update :field-value
-                                            :new-value           field-value})))}
+            [:a.value {:value      value
+                       :data-value value
+                       :class      (str "field-value "
+                                        (let [value-is-in-condition (some (fn [condition]
+                                                                            (and (= (:master-field condition) selected-field)
+                                                                                 (= (:field-value condition) field-value)))
+                                                                          conditions)]
+                                          (if value-is-in-condition
+                                            "assigned")))
+                       :on-click   (fn [e]
+                                     (let [{:keys [pick-channel]} (om/get-shared owner)]
+                                       (put! pick-channel
+                                             {:selection-to-update :field-value
+                                              :new-value           field-value})))}
              name]]))])))
 
+(defn fields-without-field [fields field]
+  (remove (partial = field)
+          fields))
 
 (defcomponent slave-fields-picker [{:keys [master-field field-value slave-fields]} owner]
   (render-state [_ _]
     (html
       [:ul
        (if field-value
-         (for [{:keys [name id] :as ticket-field} (remove (partial = master-field)
-                                                          (om/get-shared owner :ticket-fields))]
-           [:li
-            [:a
-             (let [field-is-selected (slave-fields ticket-field)]
-               {:on-click (fn [e]
-                            (let [{:keys [pick-channel]} (om/get-shared owner)
-                                  updated-slave-fields (if field-is-selected
-                                                         (disj slave-fields ticket-field)
-                                                         (conj slave-fields ticket-field))]
-                              (put! pick-channel
-                                    {:selection-to-update :slave-fields
-                                     :new-value           updated-slave-fields})))
-                :class    (str "selectedField" (if field-is-selected " assigned"))
-                :style    {:font-weight (if field-is-selected "bold")}
-                :value    id})
-             name]]))])))
+         (let [available-fields (fields-without-field (om/get-shared owner :ticket-fields)
+                                           master-field)]
+           (for [{:keys [name id] :as ticket-field} available-fields]
+             [:li
+              [:a
+               (let [field-is-selected (slave-fields ticket-field)]
+                 {:on-click (fn [e]
+                              (let [{:keys [pick-channel]} (om/get-shared owner)
+                                    updated-slave-fields (if field-is-selected
+                                                           (disj slave-fields ticket-field)
+                                                           (conj slave-fields ticket-field))]
+                                (put! pick-channel
+                                      {:selection-to-update :slave-fields
+                                       :new-value           updated-slave-fields})))
+                  :class    (str "selectedField slave-field " (if field-is-selected " assigned"))
+                  :data-id  id
+                  :style    {:font-weight (if field-is-selected "bold")}
+                  :value    id})
+               name]])))])))
 
+; what do these components have in common?
 
 (defcomponent field-list [selections owner {:keys [fields highlighted-by-default label]}]
   (render-state [_ _]
@@ -71,9 +79,10 @@
         (for [{:keys [name id] :as ticket-field} fields]
           [:li {:class (if (= ticket-field (:master-field selections))
                          "active")}
-           [:a.field
+           [:a.field.master-field
             {:class    (if highlighted-by-default "assigned")
              :value    id
+             :data-id  id
              :on-click (fn [e]
                          (let [{:keys [pick-channel]} (om/get-shared owner)]
                            (put! pick-channel
