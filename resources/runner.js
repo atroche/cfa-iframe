@@ -41,7 +41,7 @@ fs.write(pagePath, html, 'w');
 
 
 p.open("file://" + "/Users/aroche/Code/clj/iframe-app/resources/runner.js.html", function () {
-//	    fs.remove(pagePath);
+	    fs.remove(pagePath);
 
     // p.evaluate is sandboxed, can't ship closures across;
     // so, a bit of a hack, better than polling :-P

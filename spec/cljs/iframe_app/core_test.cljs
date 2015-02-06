@@ -12,9 +12,10 @@
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
             [iframe-app.condition-selector :refer [fields-without-field]]
-            [iframe-app.journeys :refer [possible-selection-states
-                                         state-transitions
-                                         generate-user-journey]]
+            [iframe-app.journeys :as j :refer [possible-selection-states
+                                               transform
+                                               field-values-from-fields
+                                               generate-user-journey]]
             [iframe-app.core :refer [main app]]))
 
 
@@ -22,6 +23,11 @@
 (enable-console-print!)
 (set! (.-warn js/console) (fn [t] nil))
 (def p println)
+
+(defn np [m]
+  (println "===============")
+  (p m)
+  (println "==============="))
 
 (defonce app-state (atom {:conditions #{}}))
 
@@ -42,33 +48,26 @@
   (partial get-field-by "slave-field" "id"))
 
 
-(defn element-click-fn [element-getter]
-  (fn [arg]
-    (click (element-getter arg))))
+(defmulti perform :action-type)
+
+(defmethod perform :select-master-field
+  [{:keys [value]}]
+  (click (get-master-field-element value)))
+
+(defmethod perform :select-field-value
+  [{:keys [value]}]
+  (click (get-field-value-element value)))
+
+;(def behaviour->action
+;  {   :select-slave-field
+;                         :transform      (fn [fields arg]
+;                                           (update-in fields [:slave-fields] conj arg))}})
 
 
-
-(def behaviour->action
-  {:select-master-field {:element-getter (element-click-fn get-master-field-element)
-                         :transform      (fn [state new-value]
-                                           (assoc state :master-field new-value))}
-   :select-field-value  {:element-getter (element-click-fn get-field-value-element)
-                         :transform      (fn [state arg]
-                                           (assoc state :field-value arg))}
-   :select-slave-field  {:element-getter (element-click-fn get-slave-field-element)
-                         :transform      (fn [fields arg]
-                                           (update-in fields [:slave-fields] conj arg))}})
-
-
-
-(defn behave [[behaviour-name arg]]
-  (when-let [action (:element-getter (behaviour->action behaviour-name))]
-    (action arg)))
 
 (defn selection-state-matches?
   "ensure that the expected state matches the app-state atom and the DOM"
   [state]
-
   (= (:selections @app-state)
      state))
 
@@ -78,16 +77,12 @@
         actual-id (string->int (dommy/attr master-field-el :data-id))]
     (= actual-id (:id master-field))))
 
-(defn get-states-for-behaviors [behaviours]
-  (reductions (fn [state {:keys [transform-fn value]}]
-                (transform-fn state value))
-              {:master-field nil
-               :field-value  nil
-               :slave-fields #{}}
-              (map (fn [[behaviour-name value :as behaviour]]
-                     {:transform-fn (:transform (behaviour->action behaviour-name))
-                      :value        value})
-                   behaviours)))
+(defn get-states-for-actions [actions]
+  (reductions (fn [state action]
+                (transform action state))
+
+              j/starting-state
+              actions))
 
 (defn setup-app [ticket-fields]
   (.appendChild (.-body js/document)
@@ -100,31 +95,24 @@
             :shared {:pick-channel  (chan)
                      :ticket-fields ticket-fields}}))
 
-(defn dummy-behaviour [ticket-fields]
-  (let [master-field (rand-nth ticket-fields)
-        field-value (rand-nth (:possible-values master-field))
-        slave-field (rand-nth (fields-without-field ticket-fields
-                                                    master-field))]
-    [[:select-master-field master-field]
-     [:select-field-value field-value]
-     [:select-slave-field slave-field]]))
-
 
 (deftest ^:async can-make-conditions
   (let [ticket-fields (first (gen/sample ticket-fields-gen 1))
-        behaviour (dummy-behaviour ticket-fields)
-        states (get-states-for-behaviors behaviour)
-        behaviours-with-state-afterwards (map vector behaviour (rest states))]
+        actions (generate-user-journey ticket-fields)
+        states (get-states-for-actions actions)
+        actions-with-after-state (map vector actions (rest states))]
 
     (setup-app ticket-fields)
     (go
-      (doseq [[behaviour after-state] behaviours-with-state-afterwards]
-        (behave behaviour)
+      (doseq [[action after-state] actions-with-after-state]
+        (np action)
+        (np after-state)
+        (perform action)
         (wait-a-bit)
 
-
-        (is (selection-state-matches? after-state))
-        (is (state-matches-dom? after-state)))
+        (is (= after-state (:selections @app-state)) )
+        ;(is (state-matches-dom? after-state))
+        )
       (dommy/set-html! (.-body js/document) "")
       (swap! iframe-app.generators/ints-used-so-far (fn [_] #{}))
       (done))))
@@ -134,11 +122,15 @@
 
 (set! (.-onload js/window)
       (fn []
-        ;(t/run-all-tests)
-        (run-tests 'iframe-app.journeys-test)
+        (t/run-all-tests)
+        ;(run-tests 'iframe-app.journeys-test)
         ;(.callPhantom js/window "exit")
         (js/setTimeout
           (fn []
             (.callPhantom js/window "exit"))
           3000)
         ))
+
+
+
+

@@ -7,11 +7,14 @@
 
 (defmethod transform :select-master-field
   [action state]
-  (assoc state :master-field (:value action)))
+  (assoc state :master-field (:value action)
+               :field-value nil
+               :slave-fields #{}))
 
 (defmethod transform :select-field-value
   [action state]
-  (assoc state :field-value (:value action)))
+  (assoc state :field-value (:value action)
+               :slave-fields #{}))
 
 (defrecord Action [action-type value])
 
@@ -19,7 +22,8 @@
   (flatten (map :possible-values fields)))
 
 (def starting-state {:master-field nil
-                     :field-value  nil})
+                     :field-value  nil
+                     :slave-fields #{}})
 
 (ann possible-selection-states [#{TicketField} -> #{SelectionState}])
 (defn possible-selection-states [ticket-fields]
@@ -34,7 +38,8 @@
             master-nil? [false true]
             value-nil? [false true]]
         {:master-field (if-not master-nil? field)
-         :field-value  (if-not value-nil? field-value)}))))
+         :field-value  (if-not value-nil? field-value)
+         :slave-fields #{}}))))
 
 (defn categorize-state [{:keys [:master-field field-value] :as state}]
   (cond (= starting-state state) :start
@@ -47,8 +52,9 @@
   {:post [(every? (fn [action] (= Action (type action))) %)]}
   (let [state-category (categorize-state state)
         other-fields (remove #(= % master-field) ticket-fields)
+        available-field-values (:possible-values master-field)
         field-values (field-values-from-fields ticket-fields)
-        other-field-values (remove #(= % field-value) field-values)]
+        other-field-values (remove #(= % field-value) available-field-values)]
     (when state-category
       (let [values->actions (fn [values action-type]
                              (for [value values]
@@ -56,7 +62,7 @@
             next-actions (case state-category
                            :start (values->actions ticket-fields :select-master-field)
                            :on-master-field (concat (values->actions other-fields :select-master-field)
-                                                    (values->actions field-values :select-field-value))
+                                                    (values->actions available-field-values :select-field-value))
                            :on-field-value (concat (values->actions other-fields :select-master-field)
                                                    (values->actions other-field-values :select-field-value))
                            '())]
@@ -70,10 +76,9 @@
   (loop [state starting-state
          path []]
     (let [possible-actions (next-actions-for-state state ticket-fields)]
-      (if (or (> (count path) 4) (empty? possible-actions))
+      (if (or (> (count path) 200) (empty? possible-actions))
         path
-        (let [
-              action (choose-action possible-actions)]
+        (let [action (choose-action possible-actions)]
           (recur (transform action state)
                  (conj path action)))))))
 
