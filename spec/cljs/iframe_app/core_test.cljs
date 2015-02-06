@@ -1,4 +1,4 @@
-(ns core-test
+(ns iframe-app.core-test
   (:require-macros [cemerick.cljs.test
                     :refer (is deftest with-test run-tests testing test-var
                                done are)]
@@ -12,7 +12,12 @@
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
             [iframe-app.condition-selector :refer [fields-without-field]]
+            [iframe-app.journeys :refer [possible-selection-states
+                                         state-transitions
+                                         generate-user-journey]]
             [iframe-app.core :refer [main app]]))
+
+
 
 (enable-console-print!)
 (set! (.-warn js/console) (fn [t] nil))
@@ -40,6 +45,8 @@
 (defn element-click-fn [element-getter]
   (fn [arg]
     (click (element-getter arg))))
+
+
 
 (def behaviour->action
   {:select-master-field {:element-getter (element-click-fn get-master-field-element)
@@ -98,8 +105,8 @@
         field-value (rand-nth (:possible-values master-field))
         slave-field (rand-nth (fields-without-field ticket-fields
                                                     master-field))]
-    [[:select-master-field master-field],
-     [:select-field-value field-value],
+    [[:select-master-field master-field]
+     [:select-field-value field-value]
      [:select-slave-field slave-field]]))
 
 
@@ -119,6 +126,7 @@
         (is (selection-state-matches? after-state))
         (is (state-matches-dom? after-state)))
       (dommy/set-html! (.-body js/document) "")
+      (swap! iframe-app.generators/ints-used-so-far (fn [_] #{}))
       (done))))
 
 
@@ -126,8 +134,11 @@
 
 (set! (.-onload js/window)
       (fn []
-        (t/run-all-tests)
+        ;(t/run-all-tests)
+        (run-tests 'iframe-app.journeys-test)
+        ;(.callPhantom js/window "exit")
         (js/setTimeout
           (fn []
             (.callPhantom js/window "exit"))
-          3000)))
+          3000)
+        ))

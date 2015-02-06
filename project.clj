@@ -18,7 +18,9 @@
                  [com.cemerick/clojurescript.test "0.3.3"]
                  [org.omcljs/om "0.8.7"]
                  [environ "1.0.0"]
+                 [org.clojure/core.typed "0.2.77"]
                  [sablono "0.3.1"]
+                 [org.clojure/math.combinatorics "0.0.8"]
                  [prismatic/dommy "1.0.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [prismatic/om-tools "0.3.9" :exclusions [potemkin]]]
@@ -59,6 +61,7 @@
 
                    :dependencies [[figwheel "0.1.6-SNAPSHOT"]
                                   [com.cemerick/piggieback "0.1.6-SNAPSHOT"]
+                                  [weasel "0.5.0"]
                                   [leiningen "2.5.0"]]
 
                    :repl-options {:init-ns iframe-app.server

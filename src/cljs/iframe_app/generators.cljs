@@ -15,6 +15,7 @@
 
 (def uniq-int
   (gen/such-that (fn [n] (if-let [unique (not (@ints-used-so-far n))]
+                           (.log js/console @ints-used-so-far)
                            (swap! ints-used-so-far conj n)))
                  gen/pos-int))
 
@@ -24,11 +25,19 @@
 
 (def ticket-field-gen
   (hmap-gen {:name non-empty-string
-             :id uniq-int
+             :id gen/pos-int
              :possible-values (gen/not-empty (gen/vector field-value-gen))}))
 
 (def ticket-fields-gen
   (gen/such-that
     (fn [ticket-fields]
-      (> (count ticket-fields) 2))
-    (gen/vector ticket-field-gen)))
+      (and (> (count ticket-fields) 2)
+           (= (count (map :id ticket-fields))
+              (count (distinct (map :id ticket-fields))))))
+    (gen/vector ticket-field-gen)
+    1000))
+
+
+
+
+
