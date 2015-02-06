@@ -8,13 +8,12 @@
             [om.core :as om :include-macros true]
             [dommy.core :as dommy :refer-macros [sel sel1]]
             [cljs.core.async :refer [put! chan <! >!]]
-            [iframe-app.utils :refer [fire! click string->int]]
+            [iframe-app.utils :refer [fire! click string->int field-values-from-fields]]
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
             [iframe-app.condition-selector :refer [fields-without-field]]
             [iframe-app.journeys :as j :refer [possible-selection-states
                                                transform
-                                               field-values-from-fields
                                                generate-user-journey]]
             [iframe-app.core :refer [main app]]))
 
@@ -47,6 +46,9 @@
 (def get-slave-field-element
   (partial get-field-by "slave-field" "id"))
 
+; for master field
+; identifier: id
+
 
 (defmulti perform :action-type)
 
@@ -58,20 +60,17 @@
   [{:keys [value]}]
   (click (get-field-value-element value)))
 
+(defmethod perform :toggle-slave-field
+  [{:keys [value]}]
+  (click (get-slave-field-element value)))
+
 ;(def behaviour->action
 ;  {   :select-slave-field
 ;                         :transform      (fn [fields arg]
 ;                                           (update-in fields [:slave-fields] conj arg))}})
 
 
-
-(defn selection-state-matches?
-  "ensure that the expected state matches the app-state atom and the DOM"
-  [state]
-  (= (:selections @app-state)
-     state))
-
-(defn state-matches-dom? [selections]
+(defn state-matches-dom? [{:keys [selections]}]
   (let [master-field (:master-field selections)
         master-field-el (get-master-field-element master-field)
         actual-id (string->int (dommy/attr master-field-el :data-id))]
@@ -101,29 +100,31 @@
         actions (generate-user-journey ticket-fields)
         states (get-states-for-actions actions)
         actions-with-after-state (map vector actions (rest states))]
+    (doseq [[action state] (take 5 actions-with-after-state)]
+      (np action)
+      (np state))
 
     (setup-app ticket-fields)
     (go
       (doseq [[action after-state] actions-with-after-state]
-        (np action)
-        (np after-state)
         (perform action)
         (wait-a-bit)
 
-        (is (= after-state (:selections @app-state)) )
+        (is (= after-state @app-state) )
         ;(is (state-matches-dom? after-state))
         )
       (dommy/set-html! (.-body js/document) "")
       (swap! iframe-app.generators/ints-used-so-far (fn [_] #{}))
-      (done))))
+      (done)
+      (.callPhantom js/window "exit"))))
 
 
 
 
 (set! (.-onload js/window)
       (fn []
-        (t/run-all-tests)
-        ;(run-tests 'iframe-app.journeys-test)
+        ;(t/run-all-tests)
+        (run-tests 'iframe-app.core-test)
         ;(.callPhantom js/window "exit")
         (js/setTimeout
           (fn []

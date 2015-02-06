@@ -17,17 +17,14 @@
             [iframe-app.core :refer [main app]]))
 
 
+(enable-console-print!)
+(set! (.-warn js/console) (fn [t] nil))
+(def p println)
 
 (defn generate-ticket-fields []
   {:post [(not-empty %)]}
   (let [ticket-fields (first (gen/sample ticket-fields-gen 1))]
     ticket-fields))
-
-;(deftest possible-selection-states-includes-empty-state
-;  (let [states (possible-selection-states (generate-ticket-fields))]
-;    (is (> (count states) 1))
-;    (is (contains? states {:master-field nil
-;                           :field-value nil}))))
 
 (deftest next-actions-for-state-works
   (let [ticket-fields (generate-ticket-fields)
@@ -42,18 +39,4 @@
     ;  (println)
     ;  (println bit)
     ;  (println)
-    (is (not-empty journey)))))
-
-;(enable-console-print!)
-;(set! (.-warn js/console) (fn [t] nil))
-;(def p println)
-;
-;
-;
-;(set! (.-onload js/window)
-;      (fn []
-;        (t/run-all-tests)
-;        (js/setTimeout
-;          (fn []
-;            (.callPhantom js/window "exit"))
-;          3000)))
+    (is (not-empty journey))))

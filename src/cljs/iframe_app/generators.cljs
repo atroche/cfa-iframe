@@ -13,12 +13,6 @@
 
 (def ints-used-so-far (atom #{}))
 
-(def uniq-int
-  (gen/such-that (fn [n] (if-let [unique (not (@ints-used-so-far n))]
-                           (.log js/console @ints-used-so-far)
-                           (swap! ints-used-so-far conj n)))
-                 gen/pos-int))
-
 (def field-value-gen
   (hmap-gen {:name non-empty-string
              :value non-empty-string}))
