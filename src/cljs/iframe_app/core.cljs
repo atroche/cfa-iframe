@@ -2,8 +2,8 @@
   (:require-macros [cljs.core.async.macros :refer [go-loop]])
   (:require
     [om.core :as om :include-macros true]
-    [iframe-app.condition-selector :refer [slave-fields-picker value-picker
-                                           master-field-picker user-type-selector]]
+    [iframe-app.selectors :refer [slave-fields-selector value-selector
+                                           master-field-selector user-type-selector]]
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
@@ -109,7 +109,7 @@
                  conditions)))
 
 (defn reset-irrelevant-selections
-  "When someone selects a master field (e.g.) we want to deselect the value
+  "When someone selects (e.g.) a master field we want to deselect the value
    and slave fields that were selected (because they only applied to that
    field. Likewise when someone selects a new value."
   [selections selection-to-update conditions]
@@ -129,9 +129,9 @@
 (defcomponent app [app-state owner]
   (will-mount [_]
     (go-loop []
-      ; handle updates from the three condition-selector components
-      (let [pick-channel (om/get-shared owner :pick-channel)
-            {:keys [selection-to-update new-value]} (<! pick-channel)
+      ; handle updates from the selectors
+      (let [selector-channel (om/get-shared owner :selector-channel)
+            {:keys [selection-to-update new-value]} (<! selector-channel)
             {:keys [conditions selections]} @app-state
             conditions ((:user-type selections) conditions)
             new-selections (-> selections
@@ -183,19 +183,19 @@
            [:table.table
             [:tbody
              [:tr
-              (om/build master-field-picker
+              (om/build master-field-selector
                         app-state)
 
               [:td.key
                [:div.values
                 [:div.separator "Available"]
-                (om/build value-picker
+                (om/build value-selector
                           app-state)
                 ]]
               [:td.selected
                [:div.values
                 [:div.separator "Available"]
-                (om/build slave-fields-picker (:selections app-state))]]]]]]]]
+                (om/build slave-fields-selector (:selections app-state))]]]]]]]]
 
         [:footer
          [:div.pane
@@ -217,5 +217,5 @@
     app
     app-state
     {:target (. js/document (getElementById "app"))
-     :shared {:pick-channel  (chan)
+     :shared {:selector-channel  (chan)
               :ticket-fields dummy-ticket-fields}}))

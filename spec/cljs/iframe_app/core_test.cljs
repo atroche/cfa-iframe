@@ -11,7 +11,7 @@
             [iframe-app.utils :refer [fire! click string->int]]
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
-            [iframe-app.condition-selector :refer [fields-without-field]]
+            [iframe-app.selectors :refer [fields-without-field]]
             [iframe-app.core :refer [main app]]))
 
 (enable-console-print!)
@@ -90,7 +90,7 @@
   (om/root app
            app-state
            {:target (. js/document (getElementById "app"))
-            :shared {:pick-channel  (chan)
+            :shared {:selector-channel  (chan)
                      :ticket-fields ticket-fields}}))
 
 (defn dummy-behaviour [ticket-fields]

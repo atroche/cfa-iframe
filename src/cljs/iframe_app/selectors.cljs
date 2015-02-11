@@ -1,4 +1,4 @@
-(ns iframe-app.condition-selector
+(ns iframe-app.selectors
   (:require-macros [cljs.core.async.macros :refer [go-loop]])
   (:require
     [om.core :as om :include-macros true]
@@ -13,7 +13,7 @@
 (declare init-state)
 (declare will-mount)
 
-(defcomponent value-picker [{:keys [selections conditions]} owner]
+(defcomponent value-selector [{:keys [selections conditions]} owner]
   (render-state [_ _]
     (html
       [:ul
@@ -33,8 +33,8 @@
                                           (if value-is-in-condition
                                             "assigned")))
                        :on-click   (fn [e]
-                                     (let [{:keys [pick-channel]} (om/get-shared owner)]
-                                       (put! pick-channel
+                                     (let [{:keys [selector-channel]} (om/get-shared owner)]
+                                       (put! selector-channel
                                              {:selection-to-update :field-value
                                               :new-value           field-value})))}
              name]]))])))
@@ -43,7 +43,7 @@
   (remove (partial = field)
           fields))
 
-(defcomponent slave-fields-picker [{:keys [master-field field-value slave-fields]} owner]
+(defcomponent slave-fields-selector [{:keys [master-field field-value slave-fields]} owner]
   (render-state [_ _]
     (html
       [:ul
@@ -55,11 +55,11 @@
               [:a
                (let [field-is-selected (slave-fields ticket-field)]
                  {:on-click (fn [e]
-                              (let [{:keys [pick-channel]} (om/get-shared owner)
+                              (let [{:keys [selector-channel]} (om/get-shared owner)
                                     updated-slave-fields (if field-is-selected
                                                            (disj slave-fields ticket-field)
                                                            (conj slave-fields ticket-field))]
-                                (put! pick-channel
+                                (put! selector-channel
                                       {:selection-to-update :slave-fields
                                        :new-value           updated-slave-fields})))
                   :class    (str "selectedField slave-field " (if field-is-selected " assigned"))
@@ -78,8 +78,8 @@
         {:value (:id field)
          :data-id  (:id field)
          :on-click (fn [_]
-                     (let [{:keys [pick-channel]} (om/get-shared owner)]
-                       (put! pick-channel
+                     (let [{:keys [selector-channel]} (om/get-shared owner)]
+                       (put! selector-channel
                              {:selection-to-update :master-field
                               :new-value           field})))}
         (:name field)]])))
@@ -96,7 +96,7 @@
                     {:opts {:field ticket-field}}))]])))
 
 
-(defcomponent master-field-picker [app-state owner]
+(defcomponent master-field-selector [app-state owner]
   (render-state [_ _]
     (html
       (let [user-type (:user-type (:selections app-state))
@@ -120,9 +120,9 @@
     (html
       [:select {:name "user-type"
                 :on-change (fn [e]
-                             (let [pick-channel (om/get-shared owner :pick-channel)
+                             (let [selector-channel (om/get-shared owner :selector-channel)
                                    new-user-type (keyword (dommy/value (.-target e)))]
-                               (put! pick-channel
+                               (put! selector-channel
                                      {:selection-to-update :user-type
                                       :new-value           new-user-type})))}
        [:option {:value "agent"
