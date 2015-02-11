@@ -12,8 +12,6 @@
 (declare init-state)
 (declare will-mount)
 
-
-; TODO: items inside any currently selected condition should be bold
 (defcomponent value-picker [{:keys [selections conditions]} owner]
   (render-state [_ _]
     (html
