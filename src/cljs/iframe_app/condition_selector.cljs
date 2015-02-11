@@ -22,7 +22,7 @@
              field-values (:possible-values selected-field)]
          (for [{:keys [name value] :as field-value} field-values]
            [:li {:class (if (= field-value (:field-value selections))
-                          "active")}
+                          "selected")}
             [:a.value {:value      value
                        :data-value value
                        :class      (str "field-value "
@@ -49,7 +49,7 @@
       [:ul
        (if field-value
          (let [available-fields (fields-without-field (om/get-shared owner :ticket-fields)
-                                           master-field)]
+                                                      master-field)]
            (for [{:keys [name id] :as ticket-field} available-fields]
              [:li
               [:a
@@ -69,18 +69,17 @@
                name]])))])))
 
 
-(defcomponent field-list [selections owner {:keys [fields highlighted-by-default label]}]
+(defcomponent field-list [{:keys [master-field]} owner {:keys [fields label list-class]}]
   (render-state [_ _]
     (html
       [:div.field-list
        [:div.separator (str label " (" (count fields) ")")]
-       [:ul.available
+       [:ul {:class list-class}
         (for [{:keys [name id] :as ticket-field} fields]
-          [:li {:class (if (= ticket-field (:master-field selections))
-                         "active")}
+          [:li {:class (if (= ticket-field master-field)
+                         "selected")}
            [:a.field.master-field
-            {:class    (if highlighted-by-default "assigned")
-             :value    id
+            {:value    id
              :data-id  id
              :on-click (fn [e]
                          (let [{:keys [pick-channel]} (om/get-shared owner)]
@@ -100,10 +99,9 @@
             selections (:selections app-state)]
         [:td.fields
          (om/build field-list selections {:opts {:fields                 fields-not-in-conditions
-                                                 :highlighted-by-default false
-                                                 ; TODO: use a CSS class to determine which fields to highlight
+                                                 :list-class              "available-fields"
                                                  :label                  "Available"}})
          (if (not (empty? fields-in-conditions))
            (om/build field-list selections {:opts {:fields                 fields-in-conditions
-                                                   :highlighted-by-default true
+                                                   :list-class              "fields-in-existing-conditions"
                                                    :label                  "Existing conditions"}}))]))))
