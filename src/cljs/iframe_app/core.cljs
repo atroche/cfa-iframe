@@ -103,16 +103,24 @@
       (conj cleaned-conditions new-condition)
       cleaned-conditions)))
 
+(defn selected-condition [selections conditions]
+  (first (filter (fn [{:keys [master-field field-value]}]
+                   (and (= (:master-field selections) master-field)
+                        (= (:field-value selections) field-value)))
+                 conditions)))
 
 (defn reset-irrelevant-selections
   "When someone selects a master field (e.g.) we want to deselect the value
    and slave fields that were selected (because they only applied to that
    field. Likewise when someone selects a new value."
-  [selections selection-to-update]
+  [selections selection-to-update conditions]
   (case selection-to-update
     :master-field (assoc selections :field-value nil
                                     :slave-fields #{})
-    :field-value (assoc selections :slave-fields #{})
+    :field-value (let [slave-fields-of-selected-condition (-> selections
+                                                              (selected-condition conditions)
+                                                              :slave-fields)]
+                   (assoc selections :slave-fields (or slave-fields-of-selected-condition #{})))
     selections))
 
 (defcomponent app [app-state owner]
@@ -123,15 +131,14 @@
             {:keys [selection-to-update new-value]} (<! pick-channel)
             new-selections (-> (:selections @app-state)
                                (assoc selection-to-update new-value)
-                               (reset-irrelevant-selections selection-to-update))]
+                               (reset-irrelevant-selections selection-to-update (:conditions @app-state)))]
         (om/update! app-state :selections new-selections)
 
         (when (= selection-to-update :slave-fields)
           (let [updated-conditions (update-conditions (:conditions @app-state) new-selections)]
             (om/update! app-state [:conditions] updated-conditions))))
       (recur)))
-  (render-state [_ {:keys [selected-field-id slave-fields-picker-chan
-                           selected-value]}]
+  (render-state [_ _]
     (html
       [:section.ember-view.apps.app-554.apps_nav_bar.app_pane.main_panes
        [:header
@@ -208,5 +215,3 @@
     {:target (. js/document (getElementById "app"))
      :shared {:pick-channel  (chan)
               :ticket-fields dummy-ticket-fields}}))
-
-

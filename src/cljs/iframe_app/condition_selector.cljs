@@ -68,7 +68,6 @@
                   :value    id})
                name]])))])))
 
-; what do these components have in common?
 
 (defcomponent field-list [selections owner {:keys [fields highlighted-by-default label]}]
   (render-state [_ _]
@@ -95,13 +94,14 @@
   (render-state [_ _]
     (html
 
-      (let [fields-in-conditions (->> @app-state :conditions (map :master-field) set)
+      (let [fields-in-conditions (->> app-state :conditions (map :master-field) set)
             fields-not-in-conditions (difference (set (om/get-shared owner :ticket-fields))
                                                  fields-in-conditions)
             selections (:selections app-state)]
         [:td.fields
          (om/build field-list selections {:opts {:fields                 fields-not-in-conditions
                                                  :highlighted-by-default false
+                                                 ; TODO: use a CSS class to determine which fields to highlight
                                                  :label                  "Available"}})
          (if (not (empty? fields-in-conditions))
            (om/build field-list selections {:opts {:fields                 fields-in-conditions
