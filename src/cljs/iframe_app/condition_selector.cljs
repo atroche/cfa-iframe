@@ -6,7 +6,8 @@
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
     [clojure.set :refer [difference]]
-    [cljs.core.async :refer [put! chan <!]]))
+    [cljs.core.async :refer [put! chan <!]]
+    [dommy.core :as dommy]))
 
 (declare render-state)
 (declare init-state)
@@ -16,7 +17,8 @@
   (render-state [_ _]
     (html
       [:ul
-       (let [selected-field (:master-field selections)
+       (let [conditions ((:user-type selections) conditions)
+             selected-field (:master-field selections)
              field-values (:possible-values selected-field)]
          (for [{:keys [name value] :as field-value} field-values]
            [:li {:class (if (= field-value (:field-value selections))
@@ -97,7 +99,8 @@
 (defcomponent master-field-picker [app-state owner]
   (render-state [_ _]
     (html
-      (let [fields-in-conditions (->> app-state :conditions (map :master-field) set)
+      (let [user-type (:user-type (:selections app-state))
+            fields-in-conditions (->> app-state :conditions user-type (map :master-field) set)
             fields-not-in-conditions (difference (set (om/get-shared owner :ticket-fields))
                                                  fields-in-conditions)
             selections (:selections app-state)]
@@ -109,3 +112,22 @@
            (om/build master-field-list selections {:opts {:fields     fields-in-conditions
                                                    :list-class "fields-in-existing-conditions"
                                                    :label      "Existing conditions"}}))]))))
+
+
+
+(defcomponent user-type-selector [selections owner]
+  (render-state [_ _]
+    (html
+      [:select {:name "user-type"
+                :on-change (fn [e]
+                             (let [pick-channel (om/get-shared owner :pick-channel)
+                                   new-user-type (keyword (dommy/value (.-target e)))]
+                               (put! pick-channel
+                                     {:selection-to-update :user-type
+                                      :new-value           new-user-type})))}
+       [:option {:value "agent"
+                 :selected (= :agent (:user-type selections))}
+        "Agent"]
+       [:option {:value "end user"
+                 :selected (= :end-user (:user-type selections))}
+        "End User"]])))

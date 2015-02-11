@@ -3,7 +3,7 @@
   (:require
     [om.core :as om :include-macros true]
     [iframe-app.condition-selector :refer [slave-fields-picker value-picker
-                                           master-field-picker]]
+                                           master-field-picker user-type-selector]]
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
@@ -33,8 +33,9 @@
 
 (defonce app-state (atom {:selections {:master-field nil
                                        :field-value  nil
-                                       :slave-fields #{}}
-                          :conditions #{}}))
+                                       :slave-fields #{}
+                                       :user-type    :agent}
+                          :conditions {:agent #{} :end-user #{}}}))
 
 
 (declare render-state)
@@ -119,7 +120,11 @@
                                                               (selected-condition conditions)
                                                               :slave-fields)]
                    (assoc selections :slave-fields (or slave-fields-of-selected-condition #{})))
+    :user-type (assoc selections :master-field nil
+                                 :field-value nil
+                                 :slave-fields #{})
     selections))
+
 
 (defcomponent app [app-state owner]
   (will-mount [_]
@@ -127,14 +132,16 @@
       ; handle updates from the three condition-selector components
       (let [pick-channel (om/get-shared owner :pick-channel)
             {:keys [selection-to-update new-value]} (<! pick-channel)
-            new-selections (-> (:selections @app-state)
+            {:keys [conditions selections]} @app-state
+            conditions ((:user-type selections) conditions)
+            new-selections (-> selections
                                (assoc selection-to-update new-value)
-                               (reset-irrelevant-selections selection-to-update (:conditions @app-state)))]
+                               (reset-irrelevant-selections selection-to-update conditions))]
         (om/update! app-state :selections new-selections)
 
         (when (= selection-to-update :slave-fields)
-          (let [updated-conditions (update-conditions (:conditions @app-state) new-selections)]
-            (om/update! app-state [:conditions] updated-conditions))))
+          (let [updated-conditions (update-conditions conditions new-selections)]
+            (om/update! app-state [:conditions (:user-type selections)] updated-conditions))))
       (recur)))
   (render-state [_ _]
     (html
@@ -145,9 +152,8 @@
         {:data-main 1}
         [:div.pane.left
          [:h4 "Conditions for:"]
-         [:select {:style {:width "90%"}}
-          [:option "Agent"]
-          [:option "what"]]
+         (om/build user-type-selector (:selections app-state))
+
 
          [:h4 "Ticket Form:"]
          [:select {:style {:width "90%"}}
@@ -155,7 +161,7 @@
           [:option "what"]]
 
          [:aside.sidebar
-          (om/build conditions-manager (:conditions app-state))]]
+          (om/build conditions-manager ((:user-type (:selections app-state)) (:conditions app-state)))]]
         [:div.pane.right.section
          [:section.main
           [:div.intro
