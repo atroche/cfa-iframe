@@ -73,7 +73,7 @@
     (html
       [:div.all_rules
        [:h4.rules_summary_title
-        (str "Conditions in this form (" (count (:conditions app-state)) ")")]
+        (str "Conditions in this form (" (count conditions) ")")]
        [:ul.unstyled.global
         (for [condition conditions]
           (condition-detail condition))]])))
@@ -166,7 +166,7 @@
           [:ul.table-header.clearfix
            [:li "Fields"]
            [:li "Values"]
-           [:li "Fields to show"]]
+           [:li (str "Fields to show (" (count (:slave-fields (:selections app-state))) ")")]]
 
           [:div.table-wrapper
            [:table.table
