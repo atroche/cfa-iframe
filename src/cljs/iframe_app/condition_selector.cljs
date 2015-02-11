@@ -67,7 +67,7 @@
                name]])))])))
 
 
-(defcomponent field [selections owner {:keys [field]}]
+(defcomponent master-field [selections owner {:keys [field]}]
   (render-state [_ _]
     (html
       [:li {:class (if (= field (:master-field selections))
@@ -82,14 +82,14 @@
                               :new-value           field})))}
         (:name field)]])))
 
-(defcomponent field-list [selections _ {:keys [fields label list-class]}]
+(defcomponent master-field-list [selections _ {:keys [fields label list-class]}]
   (render-state [_ _]
     (html
       [:div.field-list
        [:div.separator  (str label " (" (count fields) ")")]
        [:ul {:class list-class}
         (for [ticket-field fields]
-          (om/build field
+          (om/build master-field
                     selections
                     {:opts {:field ticket-field}}))]])))
 
@@ -102,10 +102,10 @@
                                                  fields-in-conditions)
             selections (:selections app-state)]
         [:td.fields
-         (om/build field-list selections {:opts {:fields     fields-not-in-conditions
+         (om/build master-field-list selections {:opts {:fields     fields-not-in-conditions
                                                  :list-class "available-fields"
                                                  :label      "Available"}})
          (if (not (empty? fields-in-conditions))
-           (om/build field-list selections {:opts {:fields     fields-in-conditions
+           (om/build master-field-list selections {:opts {:fields     fields-in-conditions
                                                    :list-class "fields-in-existing-conditions"
                                                    :label      "Existing conditions"}}))]))))

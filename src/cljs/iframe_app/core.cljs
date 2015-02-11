@@ -3,14 +3,12 @@
   (:require
     [om.core :as om :include-macros true]
     [iframe-app.condition-selector :refer [slave-fields-picker value-picker
-                                           master-field-picker field-list]]
+                                           master-field-picker]]
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
     [clojure.set :refer [difference]]
     [cljs.core.async :refer [put! chan <!]]))
-
-; TODO: make values / slave fields within existing conditions highlight when viewed
 
 (def dummy-ticket-fields
   [{:name            "Priority"
