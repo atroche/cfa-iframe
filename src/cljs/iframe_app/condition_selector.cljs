@@ -69,39 +69,45 @@
                name]])))])))
 
 
-(defcomponent field-list [{:keys [master-field]} owner {:keys [fields label list-class]}]
+(defcomponent field [selections owner {:keys [field]}]
+  (render-state [_ _]
+    (html
+      [:li {:class (if (= field (:master-field selections))
+                     "selected")}
+       [:a.field.master-field
+        {:value (:id field)
+         :data-id  (:id field)
+         :on-click (fn [_]
+                     (let [{:keys [pick-channel]} (om/get-shared owner)]
+                       (put! pick-channel
+                             {:selection-to-update :master-field
+                              :new-value           field})))}
+        (:name field)]])))
+
+(defcomponent field-list [selections _ {:keys [fields label list-class]}]
   (render-state [_ _]
     (html
       [:div.field-list
-       [:div.separator (str label " (" (count fields) ")")]
+       [:div.separator  (str label " (" (count fields) ")")]
        [:ul {:class list-class}
-        (for [{:keys [name id] :as ticket-field} fields]
-          [:li {:class (if (= ticket-field master-field)
-                         "selected")}
-           [:a.field.master-field
-            {:value    id
-             :data-id  id
-             :on-click (fn [e]
-                         (let [{:keys [pick-channel]} (om/get-shared owner)]
-                           (put! pick-channel
-                                 {:selection-to-update :master-field
-                                  :new-value           ticket-field})))}
-            name]])]])))
+        (for [ticket-field fields]
+          (om/build field
+                    selections
+                    {:opts {:field ticket-field}}))]])))
 
 
 (defcomponent master-field-picker [app-state owner]
   (render-state [_ _]
     (html
-
       (let [fields-in-conditions (->> app-state :conditions (map :master-field) set)
             fields-not-in-conditions (difference (set (om/get-shared owner :ticket-fields))
                                                  fields-in-conditions)
             selections (:selections app-state)]
         [:td.fields
-         (om/build field-list selections {:opts {:fields                 fields-not-in-conditions
-                                                 :list-class              "available-fields"
-                                                 :label                  "Available"}})
+         (om/build field-list selections {:opts {:fields     fields-not-in-conditions
+                                                 :list-class "available-fields"
+                                                 :label      "Available"}})
          (if (not (empty? fields-in-conditions))
-           (om/build field-list selections {:opts {:fields                 fields-in-conditions
-                                                   :list-class              "fields-in-existing-conditions"
-                                                   :label                  "Existing conditions"}}))]))))
+           (om/build field-list selections {:opts {:fields     fields-in-conditions
+                                                   :list-class "fields-in-existing-conditions"
+                                                   :label      "Existing conditions"}}))]))))
