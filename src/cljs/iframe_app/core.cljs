@@ -8,6 +8,7 @@
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
     [clojure.set :refer [difference]]
+    [ankha.core :as ankha]
     [cljs.core.async :refer [put! chan <!]]))
 
 (def dummy-ticket-fields
@@ -195,12 +196,13 @@
               [:td.selected
                [:div.values
                 [:div.separator "Available"]
-                (om/build slave-fields-selector (:selections app-state))]]]]]]]]
+                (om/build slave-fields-selector (:selections app-state))]]]]]
+
+           (om/build ankha/inspector
+                     app-state)]]]
 
         [:footer
          [:div.pane
-          [:div
-           (prn-str (clj->js (:selections app-state)))]
           [:button.delete.text-error.deleteAll
            {:style {:display :none}}
            "Delete all conditional rules for this form"]
@@ -213,9 +215,11 @@
 
 
 (defn main []
+
   (om/root
     app
     app-state
     {:target (. js/document (getElementById "app"))
      :shared {:selector-channel  (chan)
               :ticket-fields dummy-ticket-fields}}))
+
