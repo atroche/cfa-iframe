@@ -3,12 +3,14 @@
   (:require
     [om.core :as om :include-macros true]
     [iframe-app.selectors :refer [slave-fields-selector value-selector
-                                           master-field-selector user-type-selector]]
+                                  master-field-selector user-type-selector
+                                  ticket-form-selector]]
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]
     [clojure.set :refer [difference]]
     [ankha.core :as ankha]
+    [iframe-app.utils :refer [active-conditions form->form-kw]]
     [cljs.core.async :refer [put! chan <!]]))
 
 (def dummy-ticket-fields
@@ -32,11 +34,44 @@
                       {:name "value number two" :value "v2"}]}])
 
 
+(def dummy-ticket-fields2
+  [{:name            "Something"
+    :id              1234
+    :type            :system
+    :possible-values [{:name "Low" :value "low"}
+                      {:name "Normal" :value "normal"}
+                      {:name "High" :value "high"}
+                      {:name "Urgent" :value "urgent"}]}
+
+   {:name            "fieldo de customo"
+    :id              4321
+    :type            :tagger
+    :possible-values [{:name "asdfasd" :value "asdfasd"}
+                      {:name "12345" :value "12345"}]}
+   {:name            "华美"
+    :id              9999
+    :type            :tagger
+    :possible-values [{:name "value number one" :value "v1"}
+                      {:name "value number two" :value "v2"}]}])
+
+(def dummy-ticket-forms
+  [{:name          "Default Ticket Form"
+    :id            1234
+    :ticket-fields dummy-ticket-fields},
+   {:name          "Second Ticket Form"
+    :id            5678
+    :ticket-fields dummy-ticket-fields2}])
+
+
 (defonce app-state (atom {:selections {:master-field nil
                                        :field-value  nil
                                        :slave-fields #{}
-                                       :user-type    :agent}
-                          :conditions {:agent #{} :end-user #{}}}))
+                                       :user-type    :agent
+                                       :ticket-form  (first dummy-ticket-forms)}
+                          :conditions {:agent    {(form->form-kw (first dummy-ticket-forms))  #{}
+                                                  (form->form-kw (second dummy-ticket-forms)) #{}}
+                                       :end-user {(form->form-kw (first dummy-ticket-forms))  #{}
+                                                  (form->form-kw (second dummy-ticket-forms)) #{}}}}))
 
 
 (declare render-state)
@@ -77,7 +112,6 @@
        [:ul.unstyled.global
         (for [condition conditions]
           (condition-detail condition))]])))
-
 
 
 (defn remove-condition
@@ -127,22 +161,24 @@
     selections))
 
 
-(defcomponent app [app-state owner]
+
+(defcomponent app [{:keys [conditions selections] :as app-state} owner]
   (will-mount [_]
     (go-loop []
       ; handle updates from the selectors
       (let [selector-channel (om/get-shared owner :selector-channel)
             {:keys [selection-to-update new-value]} (<! selector-channel)
             {:keys [conditions selections]} @app-state
-            conditions ((:user-type selections) conditions)
+            conditions (active-conditions selections conditions)
             new-selections (-> selections
                                (assoc selection-to-update new-value)
                                (reset-irrelevant-selections selection-to-update conditions))]
         (om/update! app-state :selections new-selections)
 
         (when (= selection-to-update :slave-fields)
-          (let [updated-conditions (update-conditions conditions new-selections)]
-            (om/update! app-state [:conditions (:user-type selections)] updated-conditions))))
+          (let [updated-conditions (update-conditions conditions new-selections)
+                {:keys [user-type ticket-form]} selections]
+            (om/update! app-state [:conditions user-type (form->form-kw ticket-form)] updated-conditions))))
       (recur)))
   (render-state [_ _]
     (html
@@ -157,12 +193,10 @@
 
 
          [:h4 "Ticket Form:"]
-         [:select {:style {:width "90%"}}
-          [:option "Default Ticket Form"]
-          [:option "what"]]
+         (om/build ticket-form-selector (:selections app-state))
 
          [:aside.sidebar
-          (om/build conditions-manager ((:user-type (:selections app-state)) (:conditions app-state)))]]
+          (om/build conditions-manager (active-conditions selections conditions))]]
         [:div.pane.right.section
          [:section.main
           [:div.intro
@@ -215,11 +249,10 @@
 
 
 (defn main []
-
   (om/root
     app
     app-state
     {:target (. js/document (getElementById "app"))
-     :shared {:selector-channel  (chan)
-              :ticket-fields dummy-ticket-fields}}))
+     :shared {:selector-channel (chan)
+              :ticket-forms     dummy-ticket-forms}}))
 

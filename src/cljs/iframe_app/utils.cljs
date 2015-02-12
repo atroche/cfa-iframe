@@ -19,3 +19,10 @@
 
 (defn string->int [str]
   (.parseInt js/window str 10))
+
+(defn form->form-kw [form]
+  (keyword (str "form-" (:id form))))
+
+(defn active-conditions [{:keys [ticket-form user-type] :as selections} conditions]
+  (let [form-kw (form->form-kw ticket-form)]
+    (-> conditions user-type form-kw)))
