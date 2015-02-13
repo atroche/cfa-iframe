@@ -36,8 +36,8 @@
 (defn run [& [port]]
   (println "run run")
   (println is-dev?)
-  (when is-dev?
-    (run-auto-reload))
+  ;(when is-dev?
+  ;  (run-auto-reload))
   (run-web-server port))
 
 (defn -main [& [port]]

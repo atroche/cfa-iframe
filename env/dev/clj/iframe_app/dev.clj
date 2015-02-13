@@ -13,7 +13,6 @@
      ;(prepend (html [:script {:type "text/javascript" :src "/react/react.js"}]))
      (append  (html [:script {:type "text/javascript"} "goog.require('iframe_app.dev')"]))))
 
-
 (defn start-figwheel []
   (future
     (print "Starting figwheel.\n")

@@ -18,7 +18,7 @@
   (render-state [_ _]
     (html
       [:ul
-       (let [conditions (active-conditions selections conditions)
+       (let [conditions-to-use  (active-conditions selections conditions)
              selected-field (:master-field selections)
              field-values (:possible-values selected-field)]
          (for [{:keys [name value] :as field-value} field-values]
@@ -30,7 +30,7 @@
                                         (let [value-is-in-condition (some (fn [condition]
                                                                             (and (= (:master-field condition) selected-field)
                                                                                  (= (:field-value condition) field-value)))
-                                                                          conditions)]
+                                                                          conditions-to-use)]
                                           (if value-is-in-condition
                                             "assigned")))
                        :on-click   (fn [e]

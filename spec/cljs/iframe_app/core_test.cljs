@@ -12,13 +12,11 @@
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
             [iframe-app.selectors :refer [fields-without-field]]
-            [iframe-app.core :refer [main app]]))
+            [iframe-app.core :refer [main app app-state]]))
 
 (enable-console-print!)
 (set! (.-warn js/console) (fn [t] nil))
 (def p println)
-
-(defonce app-state (atom {:conditions #{}}))
 
 ; TODO: use test.check to generate behaviour
 ; TODO: make finders that wait til they find what they're looking for (like Capybara)
@@ -82,7 +80,7 @@
                       :value        value})
                    behaviours)))
 
-(defn setup-app [ticket-fields]
+(defn setup-app [ticket-forms]
   (.appendChild (.-body js/document)
                 (let [element (.createElement js/document "div")
                       _ (set! (.-id element) "app")]
@@ -91,7 +89,7 @@
            app-state
            {:target (. js/document (getElementById "app"))
             :shared {:selector-channel  (chan)
-                     :ticket-fields ticket-fields}}))
+                     :ticket-forms ticket-forms}}))
 
 (defn dummy-behaviour [ticket-fields]
   (let [master-field (rand-nth ticket-fields)
@@ -104,12 +102,12 @@
 
 
 (deftest ^:async can-make-conditions
-  (let [ticket-fields (first (gen/sample ticket-fields-gen 1))
-        behaviour (dummy-behaviour ticket-fields)
+  (let [ticket-forms (first (gen/sample ticket-fields-gen 1))
+        behaviour (dummy-behaviour ticket-forms)
         states (get-states-for-behaviors behaviour)
         behaviours-with-state-afterwards (map vector behaviour (rest states))]
 
-    (setup-app ticket-fields)
+    (setup-app ticket-forms)
     (go
       (doseq [[behaviour after-state] behaviours-with-state-afterwards]
         (behave behaviour)

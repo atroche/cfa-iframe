@@ -24,7 +24,7 @@
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [prismatic/om-tools "0.3.9" :exclusions [potemkin]]]
 
-  :plugins [[lein-cljsbuild "1.0.3"]
+  :plugins [[lein-cljsbuild "1.0.4"]
             [com.cemerick/clojurescript.test "0.3.3"]
             [lein-environ "1.0.0"]]
 
@@ -34,7 +34,7 @@
 
   :aliases {"auto-test" ["do" "clean," "cljsbuild" "auto" "test"]}
 
-  :cljsbuild {:builds {:app {:source-paths ["src/cljs" "spec/cljs"]
+  :cljsbuild {:builds {:app {:source-paths ["src/cljs"]
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         ;:source-map    "resources/public/js/out.js.map"
@@ -58,14 +58,14 @@
 
   :profiles {:dev {:source-paths ["env/dev/clj"]
 
-                   :dependencies [[figwheel "0.1.6-SNAPSHOT"]
+                   :dependencies [[figwheel "0.2.3-SNAPSHOT"]
                                   [com.cemerick/piggieback "0.1.6-SNAPSHOT"]
                                   [leiningen "2.5.0"]]
 
                    :repl-options {:init-ns iframe-app.server
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
-                   :plugins [[lein-figwheel "0.1.6-SNAPSHOT"]]
+                   :plugins [[lein-figwheel "0.2.3-SNAPSHOT"]]
 
                    :figwheel {:http-server-root "public"
                               :server-port 3449

@@ -1,13 +1,14 @@
 (ns iframe-app.dev
   (:require [iframe-app.core :as core]
-            [figwheel.client :as figwheel :include-macros true]
+            [figwheel.client :refer [start]]
             [cljs.core.async :refer [put!]]))
 
 (enable-console-print!)
-;
-(figwheel/watch-and-reload
-  :websocket-url "ws://localhost:3449/figwheel-ws"
-  :jsload-callback (fn []
-                     (core/main)))
+
+(start {:websocket-url       "wss://figwheel.zd-dev.com/figwheel-ws"
+        :load-warninged-code true
+        :build-id            "app"
+        :on-jsload           (fn []
+                               (core/main))})
 
 (core/main)
