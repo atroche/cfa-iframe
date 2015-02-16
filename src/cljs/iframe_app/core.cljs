@@ -82,7 +82,34 @@
 (defcomponent condition-detail [condition owner]
   (render-state [_ state]
     (let [{:keys [master-field field-value slave-fields]} condition]
-      (html [:li.rule {:data-id (:id master-field)}
+      (html (let [{:keys [name value]} field-value]
+              [:li.value.selectedRule.hardSelect
+               [:a.ruleItem
+                {:value value
+                 :on-click (fn [_]
+                             (let [{:keys [selector-channel]} (om/get-shared owner)]
+                               (put! selector-channel
+                                     {:selection-to-update :master-field
+                                      :new-value           master-field})
+                               (put! selector-channel
+                                     {:selection-to-update :field-value
+                                      :new-value           field-value})))}
+                [:i.icon-arrow-right] name]
+               [:div.pull-right
+                [:a.deleteRule {:value value} "×"]]
+               [:p
+                [:i.icon-arrow-right]
+                " "
+                (let [slave-field-names (->> slave-fields
+                                             (map :name)
+                                             (clojure.string/join ", "))]
+                  [:em slave-field-names])]])))))
+
+
+;; Conditions grouped by a common master field
+(defcomponent condition-group [{:keys [master-field conditions]} owner]
+  (render-state [_ state]
+    (html [:li.rule {:data-id (:id master-field)}
              [:div.ruleTitle
               [:i.icon-arrow-right]
               [:a.field
@@ -93,29 +120,7 @@
                                      :new-value           master-field})))}
                (:name master-field)]]
              [:ul.unstyled
-              (let [{:keys [name value]} field-value]
-
-                [:li.value.selectedRule.hardSelect
-                 [:a.ruleItem
-                  {:value value
-                   :on-click (fn [_]
-                               (let [{:keys [selector-channel]} (om/get-shared owner)]
-                                 (put! selector-channel
-                                       {:selection-to-update :master-field
-                                        :new-value           master-field})
-                                 (put! selector-channel
-                                       {:selection-to-update :field-value
-                                        :new-value           field-value})))}
-                  [:i.icon-arrow-right] name]
-                 [:div.pull-right
-                  [:a.deleteRule {:value value} "×"]]
-                 [:p
-                  [:i.icon-arrow-right]
-                  " "
-                  (let [slave-field-names (->> slave-fields
-                                               (map :name)
-                                               (clojure.string/join ", "))]
-                    [:em slave-field-names])]])]]))))
+              (om/build-all condition-detail conditions)]])))
 
 
 
@@ -126,7 +131,10 @@
        [:h4.rules_summary_title
         (str "Conditions in this form (" (count conditions) ")")]
        [:ul.unstyled.global
-        (om/build-all condition-detail conditions)]])))
+        (let [grouped-conditions (group-by :master-field conditions)]
+          (for [[master-field conditions] grouped-conditions]
+            (om/build condition-group {:master-field master-field
+                                       :conditions conditions})))]])))
 
 
 (defn remove-condition
