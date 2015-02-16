@@ -1,4 +1,4 @@
-(ns iframe-app.core
+(ns ^:figwheel-load iframe-app.core
   (:require-macros [cljs.core.async.macros :refer [go-loop]])
   (:require
     [om.core :as om :include-macros true]
@@ -13,65 +13,12 @@
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [cljs.core.async :refer [put! chan <!]]))
 
-(def dummy-ticket-fields
-  [{:name            "Priority"
-    :id              1234
-    :type            :system
-    :possible-values [{:name "Low" :value "low"}
-                      {:name "Normal" :value "normal"}
-                      {:name "High" :value "high"}
-                      {:name "Urgent" :value "urgent"}]}
-
-   {:name            "custom field"
-    :id              4321
-    :type            :tagger
-    :possible-values [{:name "asdfasd" :value "asdfasd"}
-                      {:name "12345" :value "12345"}]}
-   {:name            "a third field"
-    :id              9999
-    :type            :tagger
-    :possible-values [{:name "value number one" :value "v1"}
-                      {:name "value number two" :value "v2"}]}])
-
-
-(def dummy-ticket-fields2
-  [{:name            "Something"
-    :id              1234
-    :type            :system
-    :possible-values [{:name "Low" :value "low"}
-                      {:name "Normal" :value "normal"}
-                      {:name "High" :value "high"}
-                      {:name "Urgent" :value "urgent"}]}
-
-   {:name            "fieldo de customo"
-    :id              4321
-    :type            :tagger
-    :possible-values [{:name "asdfasd" :value "asdfasd"}
-                      {:name "12345" :value "12345"}]}
-   {:name            "华美"
-    :id              9999
-    :type            :tagger
-    :possible-values [{:name "value number one" :value "v1"}
-                      {:name "value number two" :value "v2"}]}])
-
-(def dummy-ticket-forms
-  [{:name          "Default Ticket Form"
-    :id            1234
-    :ticket-fields dummy-ticket-fields},
-   {:name          "Second Ticket Form"
-    :id            5678
-    :ticket-fields dummy-ticket-fields2}])
-
 
 (defonce app-state (atom {:selections {:master-field nil
                                        :field-value  nil
                                        :slave-fields #{}
                                        :user-type    :agent
-                                       :ticket-form  (first dummy-ticket-forms)}
-                          :conditions {:agent    {(form->form-kw (first dummy-ticket-forms))  #{}
-                                                  (form->form-kw (second dummy-ticket-forms)) #{}}
-                                       :end-user {(form->form-kw (first dummy-ticket-forms))  #{}
-                                                  (form->form-kw (second dummy-ticket-forms)) #{}}}}))
+                                       :ticket-form  nil}}))
 
 
 (declare render-state)
@@ -245,14 +192,76 @@
            [:button.btn.btn-primary.save {:disabled "disabled"} "Save"]]]]]])))
 
 
+(defn snake-case [kw]
+  (keyword (clojure.string/replace (name kw) "-" "_")))
+
+(defn possible-values-for-field [ticket-field]
+  (case (:type ticket-field)
+    ("tickettype" "priority") (:system_field_options ticket-field)
+    "tagger" (:custom_field_options ticket-field)
+    "checkbox" [{:name "Yes" :value "yes"}, {:name "No" :value "no"}]
+    [{:name "Any" :value "any"}]))
+
+(defn process-ticket-form [ticket-form ticket-fields]
+  {:name          (:name ticket-form)
+   :id            (:id ticket-form)
+   :ticket-fields (filter (fn [ticket-field]
+                            ((set (:ticket_field_ids ticket-form)) (:id ticket-field)))
+                          ticket-fields)})
+
+(defn process-ticket-field [ticket-field]
+  {:name            (:title ticket-field)
+   :id              (:id ticket-field)
+   :type            (:type ticket-field)
+   :possible-values (possible-values-for-field ticket-field)})
+
+(defn get-data-from-response [response data-type all-fetched-data]
+  (let [data-type (snake-case data-type)
+        data (-> response
+                 (js->clj :keywordize-keys true)
+                 data-type)]
+    (if (= data-type :ticket_fields)
+      (map process-ticket-field data)
+      (for [ticket-form data]
+        (process-ticket-form ticket-form (:ticket-fields all-fetched-data))))))
 
 
+(def data-type->url {:ticket-fields "/api/v2/ticket_fields.json"
+                     :ticket-forms  "/api/v2/ticket_forms.json"})
 
 (defn main []
-  (om/root
-    app
-    app-state
-    {:target (. js/document (getElementById "app"))
-     :shared {:selector-channel (chan)
-              :ticket-forms     dummy-ticket-forms}}))
+  (let [parent-app (.init js/ZAFClient)
+        fetch-data-chan (chan)
+
+        make-request-callback (fn [data-type]
+                                (fn [response]
+                                  (put! fetch-data-chan {:data-type data-type
+                                                         :response  response})))]
+    (doseq [[data-type request-url] data-type->url]
+      (.request parent-app
+                request-url
+                (make-request-callback data-type)))
+
+
+    (go-loop [data {}]
+      (let [data-ready (= (set (keys data)) (set (keys data-type->url)))]
+        (if (not data-ready)
+          (let [{:keys [response data-type] :as msg} (<! fetch-data-chan)]
+            (recur (case data-type
+                     :ticket-fields (assoc data data-type (get-data-from-response response data-type data))
+                     :ticket-forms (assoc data data-type (get-data-from-response response data-type data)))))
+          (do
+
+            (swap! app-state assoc-in [:conditions :agent (form->form-kw (first (:ticket-forms data)))] #{})
+            (swap! app-state assoc-in [:conditions :end-user (form->form-kw (first (:ticket-forms data)))] #{})
+            (swap! app-state assoc-in [:selections :ticket-form] (first (:ticket-forms data)))
+
+
+
+            (om/root
+              app
+              app-state
+              {:target (. js/document (getElementById "app"))
+               :shared {:selector-channel (chan)
+                        :ticket-forms     (:ticket-forms data)}})))))))
 

@@ -19,6 +19,7 @@
                  [org.omcljs/om "0.8.7"]
                  [environ "1.0.0"]
                  [sablono "0.3.1"]
+                 [camel-snake-kebab "0.3.0"]
                  [ankha "0.1.5.1-21e6ac"]
                  [prismatic/dommy "1.0.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
