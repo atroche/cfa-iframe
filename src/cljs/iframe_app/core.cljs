@@ -181,6 +181,9 @@
     :user-type (assoc selections :master-field nil
                                  :field-value nil
                                  :slave-fields #{})
+    :ticket-form (assoc selections :master-field nil
+                                   :field-value nil
+                                   :slave-fields #{})
     selections))
 
 
