@@ -13,6 +13,7 @@
 
 (defonce loaded (atom false))
 
+
 (set! (.-onload js/window)
       (fn [] (when-not @loaded
                (swap! loaded not)

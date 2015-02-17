@@ -18,7 +18,7 @@
   (render-state [_ _]
     (html
       [:ul
-       (let [conditions-to-use  (active-conditions selections conditions)
+       (let [conditions-to-use (active-conditions selections conditions)
              selected-field (:master-field selections)
              field-values (:possible-values selected-field)]
          (for [{:keys [name value] :as field-value} field-values]
@@ -49,7 +49,9 @@
     (->> ticket-forms
          (filter #(= (:id %) form-id))
          first
-         :ticket-fields)))
+         :ticket-fields
+         (filter #(or (= :agent (:user-type selections))
+                      (:show-to-end-user %))))))
 
 (defcomponent slave-fields-selector [{:keys [master-field field-value slave-fields] :as selections} owner]
   (render-state [_ _]

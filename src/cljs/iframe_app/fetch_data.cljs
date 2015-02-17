@@ -39,7 +39,7 @@
    :id              (:id ticket-field)
    :type            (:type ticket-field)
    :possible-values (possible-values-for-field ticket-field groups)
-   :show-to-end-user (:visible_in_poral ticket-field)})
+   :show-to-end-user (:visible_in_portal ticket-field)})
 
 (defn get-data-from-response [response]
   (-> response
