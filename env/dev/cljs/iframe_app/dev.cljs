@@ -9,12 +9,12 @@
         :load-warninged-code true
         :build-id            "app"
         :on-jsload           (fn []
-                               (println "jsload")
                                (core/main))})
 
 (defonce loaded (atom false))
 
-(when-not @loaded
-  (swap! loaded not)
-  (core/main))
+(set! (.-onload js/window)
+      (fn [] (when-not @loaded
+               (swap! loaded not)
+               (core/main))))
 

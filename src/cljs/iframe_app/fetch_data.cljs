@@ -15,6 +15,7 @@
 
 (defonce parent-app (.init js/ZAFClient))
 
+(def dummy-ticket-forms [{:name "Default Ticket Form", :id 22786, :ticket-fields '({:name "Subject", :id 23640438, :type "subject", :possible-values [{:name "Any", :value "any"}]} {:name "Description", :id 23640448, :type "description", :possible-values [{:name "Any", :value "any"}]} {:name "Status", :id 23640458, :type "status", :possible-values [{:name "Any", :value "any"}]} {:name "Type", :id 23640468, :type "tickettype", :possible-values [{:name "Question", :value "question"} {:name "Incident", :value "incident"} {:name "Problem", :value "problem"} {:name "Task", :value "task"}]} {:name "Priority", :id 23640478, :type "priority", :possible-values [{:name "Low", :value "low"} {:name "Normal", :value "normal"} {:name "High", :value "high"} {:name "Urgent", :value "urgent"}]} {:name "Group", :id 23640488, :type "group", :possible-values ({:name "Support", :value 21407398})} {:name "Assignee", :id 23640498, :type "assignee", :possible-values [{:name "Any", :value "any"}]} {:name "Linked Data", :id 24275528, :type "text", :possible-values [{:name "Any", :value "any"}]} {:name "Thing to show", :id 24154856, :type "tagger", :possible-values [{:id 62051666, :name "what", :raw_name "what", :value "yep"}]})} {:name "Default Ticket Form", :id 43487, :ticket-fields '({:name "Subject", :id 23640438, :type "subject", :possible-values [{:name "Any", :value "any"}]} {:name "Description", :id 23640448, :type "description", :possible-values [{:name "Any", :value "any"}]} {:name "Status", :id 23640458, :type "status", :possible-values [{:name "Any", :value "any"}]} {:name "Type", :id 23640468, :type "tickettype", :possible-values [{:name "Question", :value "question"} {:name "Incident", :value "incident"} {:name "Problem", :value "problem"} {:name "Task", :value "task"}]} {:name "Priority", :id 23640478, :type "priority", :possible-values [{:name "Low", :value "low"} {:name "Normal", :value "normal"} {:name "High", :value "high"} {:name "Urgent", :value "urgent"}]} {:name "Group", :id 23640488, :type "group", :possible-values ({:name "Support", :value 21407398})} {:name "Assignee", :id 23640498, :type "assignee", :possible-values [{:name "Any", :value "any"}]})} {:name "Default Ticket Form", :id 127468, :ticket-fields '({:name "Subject", :id 23640438, :type "subject", :possible-values [{:name "Any", :value "any"}]} {:name "Description", :id 23640448, :type "description", :possible-values [{:name "Any", :value "any"}]} {:name "Status", :id 23640458, :type "status", :possible-values [{:name "Any", :value "any"}]} {:name "Type", :id 23640468, :type "tickettype", :possible-values [{:name "Question", :value "question"} {:name "Incident", :value "incident"} {:name "Problem", :value "problem"} {:name "Task", :value "task"}]} {:name "Priority", :id 23640478, :type "priority", :possible-values [{:name "Low", :value "low"} {:name "Normal", :value "normal"} {:name "High", :value "high"} {:name "Urgent", :value "urgent"}]} {:name "Group", :id 23640488, :type "group", :possible-values ({:name "Support", :value 21407398})} {:name "Assignee", :id 23640498, :type "assignee", :possible-values [{:name "Any", :value "any"}]})}])
 
 (defn possible-values-for-field [ticket-field groups]
   (case (:type ticket-field)
@@ -59,16 +60,22 @@
 
 (defn fetch-ticket-forms [ticket-forms-chan]
   (go
-    (let [fetch-data-chan (chan)
-          _ (request-data :groups fetch-data-chan)
-          groups (get-data-from-response (<! fetch-data-chan))
+    (when-not parent-app
+      ; when not inside zendesk
+      (put! ticket-forms-chan dummy-ticket-forms))
 
-          _ (request-data :ticket-fields fetch-data-chan)
-          ticket-fields (map (partial process-ticket-field groups)
-                             (get-data-from-response (<! fetch-data-chan)))
+    (when parent-app
+      (let [fetch-data-chan (chan)
+           _ (request-data :groups fetch-data-chan)
+           groups (get-data-from-response (<! fetch-data-chan))
 
-          _ (request-data :ticket-forms fetch-data-chan)
-          ticket-forms (map (partial process-ticket-form ticket-fields)
-                            (get-data-from-response (<! fetch-data-chan)))]
+           _ (request-data :ticket-fields fetch-data-chan)
+           ticket-fields (map (partial process-ticket-field groups)
+                              (get-data-from-response (<! fetch-data-chan)))
 
-      (put! ticket-forms-chan ticket-forms))))
+           _ (request-data :ticket-forms fetch-data-chan)
+           ticket-forms (map (partial process-ticket-form ticket-fields)
+                             (get-data-from-response (<! fetch-data-chan)))]
+
+       (put! ticket-forms-chan ticket-forms)))))
+
