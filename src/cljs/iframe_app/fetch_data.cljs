@@ -38,7 +38,8 @@
   {:name            (:title ticket-field)
    :id              (:id ticket-field)
    :type            (:type ticket-field)
-   :possible-values (possible-values-for-field ticket-field groups)})
+   :possible-values (possible-values-for-field ticket-field groups)
+   :show-to-end-user (:visible_in_poral ticket-field)})
 
 (defn get-data-from-response [response]
   (-> response
@@ -57,6 +58,11 @@
             (fn [response]
               (put! fetch-data-chan response))))
 
+(def field-types-to-ignore #{"assignee" "subject" "description" "ccs" "ticketsharing" "status"})
+
+(defn valid-ticket-field [{:keys [active type]}]
+  (and active
+       (not (field-types-to-ignore type))))
 
 (defn fetch-ticket-forms [ticket-forms-chan]
   (go
@@ -66,16 +72,18 @@
 
     (when parent-app
       (let [fetch-data-chan (chan)
-           _ (request-data :groups fetch-data-chan)
-           groups (get-data-from-response (<! fetch-data-chan))
+            _ (request-data :groups fetch-data-chan)
+            groups (get-data-from-response (<! fetch-data-chan))
 
-           _ (request-data :ticket-fields fetch-data-chan)
-           ticket-fields (map (partial process-ticket-field groups)
-                              (get-data-from-response (<! fetch-data-chan)))
+            _ (request-data :ticket-fields fetch-data-chan)
+            ticket-fields (->> (<! fetch-data-chan)
+                               (get-data-from-response)
+                               (filter valid-ticket-field)
+                               (map (partial process-ticket-field groups)))
 
-           _ (request-data :ticket-forms fetch-data-chan)
-           ticket-forms (map (partial process-ticket-form ticket-fields)
-                             (get-data-from-response (<! fetch-data-chan)))]
+            _ (request-data :ticket-forms fetch-data-chan)
+            ticket-forms (map (partial process-ticket-form ticket-fields)
+                              (get-data-from-response (<! fetch-data-chan)))]
 
-       (put! ticket-forms-chan ticket-forms)))))
+        (put! ticket-forms-chan ticket-forms)))))
 
