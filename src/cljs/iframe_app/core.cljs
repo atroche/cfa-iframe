@@ -168,12 +168,10 @@
               (om/build master-field-selector
                         app-state)
 
-              [:td.key
-               [:div.values
-                [:div.separator "Available"]
-                (om/build value-selector
-                          app-state)
-                ]]
+
+              (om/build value-selector
+                        app-state)
+
               [:td.selected
                [:div.values
                 [:div.separator "Available"]

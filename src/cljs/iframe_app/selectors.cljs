@@ -17,28 +17,45 @@
 (defcomponent value-selector [{:keys [selections conditions]} owner]
   (render-state [_ _]
     (html
-      [:ul
-       (let [conditions-to-use (active-conditions selections conditions)
+      [:td.key
+       (let [{:keys [selector-channel]} (om/get-shared owner)
+             conditions-to-use (active-conditions selections conditions)
              selected-field (:master-field selections)
-             field-values (:possible-values selected-field)]
-         (for [{:keys [name value] :as field-value} field-values]
-           [:li {:class (if (= field-value (:field-value selections))
-                          "selected")}
-            [:a.value {:value      value
-                       :data-value value
-                       :class      (str "field-value "
-                                        (let [value-is-in-condition (some (fn [condition]
-                                                                            (and (= (:master-field condition) selected-field)
-                                                                                 (= (:field-value condition) field-value)))
-                                                                          conditions-to-use)]
-                                          (if value-is-in-condition
-                                            "assigned")))
-                       :on-click   (fn [e]
-                                     (let [{:keys [selector-channel]} (om/get-shared owner)]
+             text-field (= (:type selected-field) "text")
+             field-values (if text-field
+                            (map :field-value conditions-to-use)
+                            (:possible-values selected-field))]
+         (println conditions-to-use)
+         [:span
+          (if text-field
+            [:input {:type      "text"
+                     :value     (:value (:field-value selections))
+                     :on-change (fn [e]
+                                  (let [new-value (.-value (.-target e))]
+                                    (put! selector-channel
+                                          {:selection-to-update :field-value
+                                           :new-value           (if (not-empty new-value)
+                                                                  {:value new-value
+                                                                   :name  new-value})})))}])
+          [:div.separator "Available"]
+          (for [{:keys [name value] :as field-value} field-values]
+            [:ul
+             [:li {:class (if (= field-value (:field-value selections))
+                            "selected")}
+              [:a.value {:value      value
+                         :data-value value
+                         :class      (str "field-value "
+                                          (let [value-is-in-condition (some (fn [condition]
+                                                                              (and (= (:master-field condition) selected-field)
+                                                                                   (= (:field-value condition) field-value)))
+                                                                            conditions-to-use)]
+                                            (if value-is-in-condition
+                                              "assigned")))
+                         :on-click   (fn [e]
                                        (put! selector-channel
                                              {:selection-to-update :field-value
-                                              :new-value           field-value})))}
-             name]]))])))
+                                              :new-value           field-value}))}
+               name]]])])])))
 
 (defn fields-without-field [fields field]
   (remove (partial = field)
