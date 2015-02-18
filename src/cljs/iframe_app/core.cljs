@@ -22,10 +22,6 @@
                                        :user-type    :agent
                                        :ticket-form  nil}}))
 
-(declare render-state)
-(declare init-state)
-(declare will-mount)
-
 (defn remove-condition
   "Takes a list of conditions, and returns all the ones that don't include
    the selected master field / value. Used when “updating” a condition to
