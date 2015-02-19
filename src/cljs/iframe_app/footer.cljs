@@ -8,10 +8,9 @@
     [iframe-app.conditions-manager :refer [conditions-manager]]
     [iframe-app.selections-manager :refer [reset-irrelevant-selections update-conditions
                                            selections-manager]]
-    [om-tools.dom :as dom :include-macros true]
+    [om-tools.dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
-    [sablono.core :as html :refer-macros [html]]
-    [ankha.core :as ankha]
+    [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
     [cljs.core.async :refer [put! chan <!]]))
@@ -33,7 +32,7 @@
                                            (get-persisted-conditions))]
     (if (empty? first-diff)
       (count (clojure.set/difference (get-persisted-conditions)
-                               conditions))
+                                     conditions))
       (count first-diff))))
 
 (defcomponent footer [app-state owner]
@@ -48,13 +47,27 @@
           [:button.delete.text-error.deleteAll
            {:style {:display :none}}
            "Delete all conditional rules for this form"]
-          [:div.action-buttons.pull-right
-           [:button.btn.cancel {:disabled "disabled"} "Cancel changes"]
-           [:button.btn.btn-primary.save
-            (let [conditions-changed? (> changed-conditions-count 0)]
+          (let [conditions-changed? (> changed-conditions-count 0)]
+            [:div.action-buttons.pull-right
+             [:button.btn.cancel
+              {:disabled (if-not conditions-changed? "disabled")
+               :on-click (fn [e]
+                           (om/update! app-state
+                                       [:conditions (:user-type selections) (form->form-kw (:ticket-form selections))]
+                                       (get-persisted-conditions))
+
+                           (let [selector-channel (om/get-shared owner :selector-channel)]
+                             (put! selector-channel
+                                   {:selection-to-update :master-field
+                                    :new-value           nil}))
+
+                           (om/refresh! owner))}
+              "Cancel changes"]
+             [:button.btn.btn-primary.save
+
               {:disabled (if-not conditions-changed? "disabled")
                :on-click (fn [e]
                            (when conditions-changed?
                              (persist-conditions! @conditions)
-                             (om/refresh! owner)))})
-            (save-button-text changed-conditions-count)]]]]))))
+                             (om/refresh! owner)))}
+              (save-button-text changed-conditions-count)]])]]))))
