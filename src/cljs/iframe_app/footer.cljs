@@ -32,6 +32,11 @@
       (count first-diff))))
 
 (defcomponent footer [app-state owner]
+  (will-mount [_]
+    (.addEventListener js/window
+                       "storage"
+                       (fn [e]
+                         (om/refresh! owner))))
   (render-state [_ _]
     (html
       (let [{:keys [conditions selections]} app-state
@@ -58,12 +63,9 @@
                            (let [selector-channel (om/get-shared owner :selector-channel)]
                              (put! selector-channel
                                    {:selection-to-update :master-field
-                                    :new-value           nil}))
-
-                           (om/refresh! owner))}
+                                    :new-value           nil})))}
               "Cancel changes"]
              [:button.btn.btn-primary.save
-
               {:disabled (if-not conditions-changed? "disabled")
                :on-click (fn [e]
                            (when conditions-changed?

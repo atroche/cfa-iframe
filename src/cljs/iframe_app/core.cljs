@@ -66,7 +66,6 @@
       (let [initial-conditions (if-let [persisted-conditions (get-persisted-conditions)]
                          persisted-conditions
                          (blank-conditions ticket-forms))]
-        (println initial-conditions)
         (swap! app-state assoc-in [:conditions] initial-conditions))
 
 
