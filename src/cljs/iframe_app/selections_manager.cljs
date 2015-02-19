@@ -5,11 +5,8 @@
     [iframe-app.selectors :refer [slave-fields-selector value-selector
                                   master-field-selector user-type-selector
                                   ticket-form-selector]]
-    [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
-    [sablono.core :as html :refer-macros [html]]
-    [clojure.set :refer [difference]]
-    [ankha.core :as ankha]
+    [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
     [cljs.core.async :refer [put! chan <!]]))
@@ -123,7 +120,4 @@
               [:td.selected
                [:div.values
                 [:div.separator "Available"]
-                (om/build slave-fields-selector selections)]]]]]
-
-           (om/build ankha/inspector
-                     app-state)]]]))))
+                (om/build slave-fields-selector selections)]]]]]]]]))))

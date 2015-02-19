@@ -8,12 +8,10 @@
     [iframe-app.conditions-manager :refer [conditions-manager]]
     [iframe-app.selections-manager :refer [reset-irrelevant-selections update-conditions
                                            selections-manager]]
-    [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
-    [sablono.core :as html :refer-macros [html]]
-    [clojure.set :refer [difference]]
-    [ankha.core :as ankha]
+    [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
+    [iframe-app.footer :refer [footer]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
     [cljs.core.async :refer [put! chan <!]]))
 
@@ -47,29 +45,20 @@
 
           (om/build selections-manager app-state)
 
-          footer]]))))
+          (om/build footer app-state)]]))))
 
-(def footer
-  [:footer
-   [:div.pane
-    [:button.delete.text-error.deleteAll
-     {:style {:display :none}}
-     "Delete all conditional rules for this form"]
-    [:div.action-buttons.pull-right
-     [:button.btn.cancel {:disabled "disabled"} "Cancel changes"]
-     [:button.btn.btn-primary.save {:disabled "disabled"} "Save"]]]])
+
 
 (defn main []
   (go
-    (let [ticket-forms-chan (chan)]
-      (fetch-ticket-forms ticket-forms-chan)
+    (let [ticket-forms-chan (chan)
+          _ (fetch-ticket-forms ticket-forms-chan)
+          ticket-forms (<! ticket-forms-chan)]
+      (swap! app-state assoc-in [:selections :ticket-form] (first ticket-forms))
 
-      (let [ticket-forms (<! ticket-forms-chan)]
-        (swap! app-state assoc-in [:selections :ticket-form] (first ticket-forms))
-
-        (om/root
-          app
-          app-state
-          {:target (. js/document (getElementById "app"))
-           :shared {:selector-channel (chan)
-                    :ticket-forms     ticket-forms}})))))
+      (om/root
+        app
+        app-state
+        {:target (. js/document (getElementById "app"))
+         :shared {:selector-channel (chan)
+                  :ticket-forms     ticket-forms}}))))

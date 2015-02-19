@@ -25,7 +25,6 @@
              field-values (if text-field
                             (map :field-value conditions-to-use)
                             (:possible-values selected-field))]
-         (println conditions-to-use)
          [:span
           (if text-field
             [:input {:type      "text"
