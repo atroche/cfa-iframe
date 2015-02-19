@@ -13,6 +13,7 @@
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [iframe-app.footer :refer [footer]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.persistence :refer [get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
 
 
@@ -48,6 +49,12 @@
           (om/build footer app-state)]]))))
 
 
+(defn blank-conditions [ticket-forms]
+  (into {}
+        (for [user-type [:agent :end-user]]
+          [user-type (into {}
+                           (for [form ticket-forms]
+                             [(form->form-kw form) #{}]))])))
 
 (defn main []
   (go
@@ -55,6 +62,17 @@
           _ (fetch-ticket-forms ticket-forms-chan)
           ticket-forms (<! ticket-forms-chan)]
       (swap! app-state assoc-in [:selections :ticket-form] (first ticket-forms))
+
+      (let [initial-conditions (if-let [persisted-conditions (get-persisted-conditions)]
+                         persisted-conditions
+                         (blank-conditions ticket-forms))]
+        (println initial-conditions)
+        (swap! app-state assoc-in [:conditions] initial-conditions))
+
+
+
+
+      ;(swap! app-state assoc-in [:conditions] (get-persisted-conditions))
 
       (om/root
         app

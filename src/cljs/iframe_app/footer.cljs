@@ -13,25 +13,21 @@
     [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.persistence :refer [persist-conditions! get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
 
 
-(defn get-persisted-conditions []
-  (cljs.reader/read-string (.getItem js/localStorage "conditions")))
-
-(defn persist-conditions! [conditions]
-  (.setItem js/localStorage "conditions" (pr-str conditions)))
 
 (defn save-button-text [changed-conditions-count]
   (str "Save"
        (if (> changed-conditions-count 0)
          (str " (" changed-conditions-count ")"))))
 
-(defn count-changed-conditions [conditions]
+(defn count-changed-conditions [conditions persisted-conditions]
   (let [first-diff (clojure.set/difference conditions
-                                           (get-persisted-conditions))]
+                                           persisted-conditions)]
     (if (empty? first-diff)
-      (count (clojure.set/difference (get-persisted-conditions)
+      (count (clojure.set/difference persisted-conditions
                                      conditions))
       (count first-diff))))
 
@@ -39,9 +35,12 @@
   (render-state [_ _]
     (html
       (let [{:keys [conditions selections]} app-state
-            conditions (active-conditions selections conditions)
-            changed-conditions-count (and conditions
-                                          (count-changed-conditions conditions))]
+            conditions-for-this-form (active-conditions selections @conditions)
+            persisted-conditions-for-this-form (active-conditions selections (get-persisted-conditions))
+            changed-conditions-count (and @conditions
+                                          (count-changed-conditions conditions-for-this-form
+                                                                    persisted-conditions-for-this-form))]
+
         [:footer
          [:div.pane
           [:button.delete.text-error.deleteAll
@@ -53,7 +52,7 @@
               {:disabled (if-not conditions-changed? "disabled")
                :on-click (fn [e]
                            (om/update! app-state
-                                       [:conditions (:user-type selections) (form->form-kw (:ticket-form selections))]
+                                       :conditions
                                        (get-persisted-conditions))
 
                            (let [selector-channel (om/get-shared owner :selector-channel)]

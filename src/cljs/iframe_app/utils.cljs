@@ -24,5 +24,6 @@
   (keyword (str "form-" (:id form))))
 
 (defn active-conditions [{:keys [ticket-form user-type] :as selections} conditions]
-  (let [form-kw (form->form-kw ticket-form)]
-    (-> conditions user-type form-kw)))
+  (if conditions
+    (let [form-kw (form->form-kw ticket-form)]
+      (-> conditions user-type form-kw))))
