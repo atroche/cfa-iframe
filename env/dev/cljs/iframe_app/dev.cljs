@@ -8,6 +8,7 @@
 (start {:websocket-url       "wss://figwheel.zd-dev.com/figwheel-ws"
         :load-warninged-code true
         :build-id            "app"
+        :debug false
         :on-jsload           (fn []
                                (core/main))})
 
