@@ -10,7 +10,7 @@
     [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw blank-conditions]]
     [iframe-app.components.footer :refer [footer]]
-    [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.fetch-remote-data :refer [fetch-ticket-forms]]
     [iframe-app.persistence :refer [get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
 
@@ -22,7 +22,8 @@
        [:div.cfa_navbar {:data-main 1}
 
         (om/build sidebar app-state)
-
+        ;
         (om/build selections-manager app-state)
-
-        (om/build footer app-state)]])))
+        ;
+        (om/build footer app-state)
+        ]])))

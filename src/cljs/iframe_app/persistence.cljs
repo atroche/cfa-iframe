@@ -6,7 +6,7 @@
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
-    [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.fetch-remote-data :refer [fetch-ticket-forms]]
     [cljs.core.async :refer [put! chan <!]]))
 
 

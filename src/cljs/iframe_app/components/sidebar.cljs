@@ -9,7 +9,7 @@
     [iframe-app.components.selections.user-type :refer [user-type-selector]]
     [iframe-app.components.selections.ticket-form :refer [ticket-form-selector]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
-    [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.fetch-remote-data :refer [fetch-ticket-forms]]
     [iframe-app.persistence :refer [persist-conditions! get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
 
@@ -23,4 +23,5 @@
          (om/build ticket-form-selector selections)
 
          [:aside.sidebar
-          (om/build conditions-manager (active-conditions selections conditions))]]))))
+          (om/build conditions-manager (active-conditions selections conditions))
+          ]]))))

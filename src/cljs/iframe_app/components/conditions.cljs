@@ -8,7 +8,7 @@
     [clojure.set :refer [difference]]
     [ankha.core :as ankha]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
-    [iframe-app.fetch-data :refer [fetch-ticket-forms]]
+    [iframe-app.fetch-remote-data :refer [fetch-ticket-forms]]
     [cljs.core.async :refer [put! chan <!]]))
 
 

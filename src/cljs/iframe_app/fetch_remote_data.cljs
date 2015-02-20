@@ -1,4 +1,4 @@
-(ns iframe-app.fetch-data
+(ns iframe-app.fetch-remote-data
   (:require-macros [cljs.core.async.macros :refer [go-loop go]])
   (:require
     [om.core :as om :include-macros true]
@@ -61,26 +61,28 @@
   (and active
        (not (field-types-to-ignore type))))
 
-(defn fetch-ticket-forms [ticket-forms-chan]
-  (go
-    (when-not parent-app
-      ; when not inside zendesk
-      (put! ticket-forms-chan dummy-ticket-forms))
+(defn fetch-ticket-forms []
+  (let [ticket-forms-chan (chan)]
+    (go
+      (when-not parent-app
+        ; when not inside zendesk
+        (put! ticket-forms-chan dummy-ticket-forms))
 
-    (when parent-app
-      (let [fetch-data-chan (chan)
-            _ (request-data :groups fetch-data-chan)
-            groups (get-data-from-response (<! fetch-data-chan))
+      (when parent-app
+        (let [fetch-data-chan (chan)
+              _ (request-data :groups fetch-data-chan)
+              groups (get-data-from-response (<! fetch-data-chan))
 
-            _ (request-data :ticket-fields fetch-data-chan)
-            ticket-fields (->> (<! fetch-data-chan)
-                               (get-data-from-response)
-                               (filter valid-ticket-field)
-                               (map (partial process-ticket-field groups)))
+              _ (request-data :ticket-fields fetch-data-chan)
+              ticket-fields (->> (<! fetch-data-chan)
+                                 (get-data-from-response)
+                                 (filter valid-ticket-field)
+                                 (map (partial process-ticket-field groups)))
 
-            _ (request-data :ticket-forms fetch-data-chan)
-            ticket-forms (map (partial process-ticket-form ticket-fields)
-                              (get-data-from-response (<! fetch-data-chan)))]
+              _ (request-data :ticket-forms fetch-data-chan)
+              ticket-forms (map (partial process-ticket-form ticket-fields)
+                                (get-data-from-response (<! fetch-data-chan)))]
 
-        (put! ticket-forms-chan ticket-forms)))))
+          (put! ticket-forms-chan ticket-forms))))
+    ticket-forms-chan))
 
