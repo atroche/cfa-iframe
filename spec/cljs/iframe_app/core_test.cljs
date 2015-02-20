@@ -11,7 +11,7 @@
             [iframe-app.utils :refer [fire! click string->int]]
             [iframe-app.generators :refer [ticket-field-gen ticket-fields-gen]]
             [cljs.test.check.generators :as gen]
-            [iframe-app.selectors :refer [fields-without-field]]
+            [iframe-app.components.selections.ticket-form :refer [fields-without-field]]
             [iframe-app.core :refer [main app app-state]]))
 
 (enable-console-print!)

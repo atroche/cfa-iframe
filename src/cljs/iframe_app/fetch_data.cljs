@@ -2,9 +2,6 @@
   (:require-macros [cljs.core.async.macros :refer [go-loop go]])
   (:require
     [om.core :as om :include-macros true]
-    [iframe-app.selectors :refer [slave-fields-selector value-selector
-                                  master-field-selector user-type-selector
-                                  ticket-form-selector]]
     [om-tools.dom :as dom :include-macros true]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :as html :refer-macros [html]]

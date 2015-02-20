@@ -27,3 +27,12 @@
   (if conditions
     (let [form-kw (form->form-kw ticket-form)]
       (-> conditions user-type form-kw))))
+
+(defn active-ticket-fields [selections ticket-forms]
+  (let [form-id (get-in selections [:ticket-form :id])]
+    (->> ticket-forms
+         (filter #(= (:id %) form-id))
+         first
+         :ticket-fields
+         (filter #(or (= :agent (:user-type selections))
+                      (:show-to-end-user %))))))

@@ -2,26 +2,27 @@
   (:require-macros [cljs.core.async.macros :refer [go-loop go]])
   (:require
     [om.core :as om :include-macros true]
-    [iframe-app.selectors :refer [slave-fields-selector value-selector
-                                  master-field-selector user-type-selector
-                                  ticket-form-selector]]
-    [iframe-app.conditions-manager :refer [conditions-manager]]
-    [iframe-app.selections-manager :refer [reset-irrelevant-selections update-conditions
-                                           selections-manager]]
+    [iframe-app.components.conditions :refer [conditions-manager]]
+    [iframe-app.components.selections.user-type :refer [user-type-selector]]
+    [iframe-app.components.selections.ticket-form :refer [ticket-form-selector]]
+    [iframe-app.components.selections.manager :refer [reset-irrelevant-selections
+                                                      update-conditions
+                                                      selections-manager]]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
-    [iframe-app.footer :refer [footer]]
+    [iframe-app.components.footer :refer [footer]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
     [iframe-app.persistence :refer [get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
 
 
-(defonce app-state (atom {:selections {:master-field nil
-                                       :field-value  nil
-                                       :slave-fields #{}
-                                       :user-type    :agent
-                                       :ticket-form  nil}}))
+(defonce app-state
+         (atom {:selections {:master-field nil
+                             :field-value  nil
+                             :slave-fields #{}
+                             :user-type    :agent
+                             :ticket-form  nil}}))
 
 
 (defcomponent app [app-state owner]
@@ -64,8 +65,8 @@
       (swap! app-state assoc-in [:selections :ticket-form] (first ticket-forms))
 
       (let [initial-conditions (if-let [persisted-conditions (get-persisted-conditions)]
-                         persisted-conditions
-                         (blank-conditions ticket-forms))]
+                                 persisted-conditions
+                                 (blank-conditions ticket-forms))]
         (swap! app-state assoc-in [:conditions] initial-conditions))
 
 

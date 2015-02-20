@@ -1,15 +1,33 @@
-(ns iframe-app.selections-manager
+(ns iframe-app.components.selections.manager
   (:require-macros [cljs.core.async.macros :refer [go-loop go]])
   (:require
     [om.core :as om :include-macros true]
-    [iframe-app.selectors :refer [slave-fields-selector value-selector
-                                  master-field-selector user-type-selector
-                                  ticket-form-selector]]
+    [iframe-app.components.selections.field-value :refer [field-value-selector]]
+    [iframe-app.components.selections.slave-fields :refer [slave-fields-selector]]
+    [iframe-app.components.selections.master-field :refer [master-field-selector]]
     [om-tools.core :refer-macros [defcomponent]]
     [sablono.core :refer-macros [html]]
     [iframe-app.utils :refer [active-conditions form->form-kw]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
-    [cljs.core.async :refer [put! chan <!]]))
+    [cljs.core.async :refer [put! chan <!]]
+    [dommy.core :as dommy]))
+
+(defcomponent user-type-selector [selections owner]
+  (render-state [_ _]
+    (html
+      [:select {:name      "user-type"
+                :on-change (fn [e]
+                             (let [selector-channel (om/get-shared owner :selector-channel)
+                                   new-user-type (keyword (dommy/value (.-target e)))]
+                               (put! selector-channel
+                                     {:selection-to-update :user-type
+                                      :new-value           new-user-type})))}
+       [:option {:value    "agent"
+                 :selected (= :agent (:user-type selections))}
+        "Agent"]
+       [:option {:value    "end-user"
+                 :selected (= :end-user (:user-type selections))}
+        "End User"]])))
 
 
 (defn remove-condition
@@ -114,7 +132,7 @@
                         app-state)
 
 
-              (om/build value-selector
+              (om/build field-value-selector
                         app-state)
 
               [:td.selected

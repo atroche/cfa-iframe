@@ -19,4 +19,3 @@
       (fn [] (when-not @loaded
                (swap! loaded not)
                (core/main))))
-
