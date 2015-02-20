@@ -2,16 +2,10 @@
   (:require-macros [cljs.core.async.macros :refer [go-loop go]])
   (:require
     [om.core :as om :include-macros true]
-    [iframe-app.components.conditions :refer [conditions-manager]]
-    [iframe-app.components.selections.user-type :refer [user-type-selector]]
-    [iframe-app.components.selections.ticket-form :refer [ticket-form-selector]]
-    [iframe-app.components.selections.manager :refer [reset-irrelevant-selections
-                                                      update-conditions
-                                                      selections-manager]]
     [om-tools.core :refer-macros [defcomponent]]
-    [sablono.core :refer-macros [html]]
-    [iframe-app.utils :refer [active-conditions form->form-kw]]
-    [iframe-app.components.footer :refer [footer]]
+
+    [iframe-app.components.app :refer [app]]
+    [iframe-app.utils :refer [active-conditions form->form-kw blank-conditions]]
     [iframe-app.fetch-data :refer [fetch-ticket-forms]]
     [iframe-app.persistence :refer [get-persisted-conditions]]
     [cljs.core.async :refer [put! chan <!]]))
@@ -24,38 +18,6 @@
                              :user-type    :agent
                              :ticket-form  nil}}))
 
-
-(defcomponent app [app-state owner]
-  (render-state [_ _]
-    (let [{:keys [conditions selections]} app-state]
-      (html
-        [:section.ember-view.apps.app-554.apps_nav_bar.app_pane.main_panes
-         [:header
-          [:h3 "Conditional Fields"]]
-         [:div.cfa_navbar
-          {:data-main 1}
-          [:div.pane.left
-           [:h4 "Conditions for:"]
-           (om/build user-type-selector selections)
-
-
-           [:h4 "Ticket Form:"]
-           (om/build ticket-form-selector selections)
-
-           [:aside.sidebar
-            (om/build conditions-manager (active-conditions selections conditions))]]
-
-          (om/build selections-manager app-state)
-
-          (om/build footer app-state)]]))))
-
-
-(defn blank-conditions [ticket-forms]
-  (into {}
-        (for [user-type [:agent :end-user]]
-          [user-type (into {}
-                           (for [form ticket-forms]
-                             [(form->form-kw form) #{}]))])))
 
 (defn main []
   (go

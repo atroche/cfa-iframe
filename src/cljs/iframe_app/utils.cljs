@@ -36,3 +36,10 @@
          :ticket-fields
          (filter #(or (= :agent (:user-type selections))
                       (:show-to-end-user %))))))
+
+(defn blank-conditions [ticket-forms]
+  (into {}
+        (for [user-type [:agent :end-user]]
+          [user-type (into {}
+                           (for [form ticket-forms]
+                             [(form->form-kw form) #{}]))])))

@@ -14,16 +14,18 @@
 (defcomponent ticket-form-selector [selections owner]
   (render-state [_ _]
     (html
-      (let [{:keys [ticket-forms selector-channel]} (om/get-shared owner)]
-        [:select {:name      "ticket-form"
-                  :on-change (fn [e]
+      [:div
+       [:h4 "Ticket Form:"]
+       (let [{:keys [ticket-forms selector-channel]} (om/get-shared owner)]
+         [:select {:name      "ticket-form"
+                   :on-change (fn [e]
 
-                               (let [form-id (string->int (dommy/value (.-target e)))
-                                     selected-form (first (filter #(= form-id (:id %)) ticket-forms))]
-                                 (put! selector-channel
-                                       {:selection-to-update :ticket-form
-                                        :new-value           selected-form})))}
-         (for [ticket-form ticket-forms]
-           [:option {:value    (:id ticket-form)
-                     :selected (= (ticket-form (:ticket-form selections)))}
-            (:name ticket-form)])]))))
+                                (let [form-id (string->int (dommy/value (.-target e)))
+                                      selected-form (first (filter #(= form-id (:id %)) ticket-forms))]
+                                  (put! selector-channel
+                                        {:selection-to-update :ticket-form
+                                         :new-value           selected-form})))}
+          (for [ticket-form ticket-forms]
+            [:option {:value    (:id ticket-form)
+                      :selected (= (ticket-form (:ticket-form selections)))}
+             (:name ticket-form)])])])))
