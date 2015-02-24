@@ -14,9 +14,30 @@
   (remove (partial = field)
           fields))
 
+(defcomponent slave-field [selections owner {:keys [field]}]
+  (render-state [_ _]
+    (let [{:keys [name id]} field
+          {:keys [slave-fields]} selections]
+      (html
+        [:li
+         [:a
+          (let [field-is-selected (slave-fields field)]
+            {:on-click (fn [e]
+                         (let [{:keys [selector-channel]} (om/get-shared owner)
+                               updated-slave-fields (if field-is-selected
+                                                      (disj slave-fields field)
+                                                      (conj slave-fields field))]
+                           (put! selector-channel
+                                 {:selection-to-update :slave-fields
+                                  :new-value           updated-slave-fields})))
+             :class    (str "selectedField slave-field " (if field-is-selected " assigned"))
+             :data-id  id
+             :style    {:font-weight (if field-is-selected "bold")}
+             :value    id})
+          name]]))))
 
 
-(defcomponent slave-fields-selector [{:keys [master-field field-value slave-fields] :as selections} owner]
+(defcomponent slave-fields-selector [{:keys [master-field field-value] :as selections} owner]
   (render-state [_ _]
     (html
       [:ul
@@ -25,20 +46,5 @@
                ticket-fields (active-ticket-fields selections ticket-forms)
                available-fields (fields-without-field ticket-fields
                                                       master-field)]
-           (for [{:keys [name id] :as ticket-field} available-fields]
-             [:li
-              [:a
-               (let [field-is-selected (slave-fields ticket-field)]
-                 {:on-click (fn [e]
-                              (let [{:keys [selector-channel]} (om/get-shared owner)
-                                    updated-slave-fields (if field-is-selected
-                                                           (disj slave-fields ticket-field)
-                                                           (conj slave-fields ticket-field))]
-                                (put! selector-channel
-                                      {:selection-to-update :slave-fields
-                                       :new-value           updated-slave-fields})))
-                  :class    (str "selectedField slave-field " (if field-is-selected " assigned"))
-                  :data-id  id
-                  :style    {:font-weight (if field-is-selected "bold")}
-                  :value    id})
-               name]])))])))
+           (for [field available-fields]
+             (om/build slave-field selections {:opts {:field field}}))))])))
