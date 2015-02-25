@@ -10,13 +10,15 @@
     [dommy.core :refer-macros [sel1]]
     [cljs.core.async :refer [chan <!]]))
 
+; TODO: ask Maxime if he's cool with us being able to deploy the app
+
 
 (defn attach-app-to-dom! [state ticket-forms]
   (om/root
     app
     state
     {:target (sel1 "#app")
-     :shared {:selector-channel (chan)
+     :shared {:selector-channel (chan)                      ; TODO: make this not globally shared
               :ticket-forms     ticket-forms}}))
 
 

@@ -12,23 +12,6 @@
     [cljs.core.async :refer [put! chan <!]]
     [dommy.core :as dommy]))
 
-(defcomponent user-type-selector [selections owner]
-  (render-state [_ _]
-    (html
-      [:select {:name      "user-type"
-                :on-change (fn [e]
-                             (let [selector-channel (om/get-shared owner :selector-channel)
-                                   new-user-type (keyword (dommy/value (.-target e)))]
-                               (put! selector-channel
-                                     {:selection-to-update :user-type
-                                      :new-value           new-user-type})))}
-       [:option {:value    "agent"
-                 :selected (= :agent (:user-type selections))}
-        "Agent"]
-       [:option {:value    "end-user"
-                 :selected (= :end-user (:user-type selections))}
-        "End User"]])))
-
 
 (defn remove-condition
   "Takes a list of conditions, and returns all the ones that don't include
