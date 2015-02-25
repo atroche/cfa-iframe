@@ -85,7 +85,8 @@
                 {:keys [user-type ticket-form]} selections]
             (om/update! app-state
                         [:conditions user-type (form->form-kw ticket-form)]
-                        updated-conditions))))
+                        updated-conditions)
+            (om/update! app-state :saved false))))
       (recur)))
   (render-state [_ _]
     (let [{:keys [selections]} app-state]
