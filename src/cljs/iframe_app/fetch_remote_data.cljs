@@ -50,10 +50,11 @@
                      :ticket-forms  "/api/v2/ticket_forms.json"})
 
 (defn request-data [data-type fetch-data-chan]
-  (.request parent-app
-            (data-type->url data-type)
-            (fn [response]
-              (put! fetch-data-chan response))))
+  (let [promise (.request parent-app
+                          (data-type->url data-type))]
+    (.then promise
+           (fn [response]
+             (put! fetch-data-chan response)))))
 
 (def field-types-to-ignore #{"assignee" "subject" "description" "ccs" "ticketsharing" "status"})
 
